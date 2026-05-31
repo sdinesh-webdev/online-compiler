@@ -1,0 +1,98 @@
+---
+// Sidebar: VS Code Explorer style
+---
+
+<aside id="app-sidebar"
+  class="flex flex-col shrink-0 transition-all duration-200 overflow-hidden"
+  style="width:var(--sidebar-width);background:var(--vscode-sidebar);border-right:1px solid var(--vscode-border);">
+
+  <!-- Section title bar -->
+  <div class="flex items-center justify-between px-3 py-[6px] shrink-0"
+       style="border-bottom:1px solid var(--vscode-border);">
+    <span class="text-[10px] font-semibold tracking-[1px] uppercase opacity-60" style="color:var(--vscode-text)">Explorer</span>
+    <div class="flex gap-0.5">
+      <!-- Hidden tab triggers for activity bar to click -->
+      <button class="sidebar-tab-btn w-5 h-5 flex items-center justify-center rounded border-none cursor-pointer hover:bg-white/10 hidden" data-tab="explorer" style="background:transparent;color:var(--vscode-text-dim)"></button>
+      <button class="sidebar-tab-btn w-5 h-5 flex items-center justify-center rounded border-none cursor-pointer hover:bg-white/10 hidden" data-tab="history" style="background:transparent;color:var(--vscode-text-dim)"></button>
+      <button class="sidebar-tab-btn w-5 h-5 flex items-center justify-center rounded border-none cursor-pointer hover:bg-white/10 hidden" data-tab="settings" style="background:transparent;color:var(--vscode-text-dim)"></button>
+    </div>
+  </div>
+
+  <!-- WORKSPACE section header -->
+  <div id="sidebar-section-label"
+       class="flex items-center gap-1.5 px-2 py-[5px] text-[11px] font-semibold uppercase tracking-wider cursor-default select-none shrink-0"
+       style="color:var(--vscode-text);border-bottom:1px solid var(--vscode-border);">
+    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="opacity-60"><path d="M6 9l6 6 6-6"/></svg>
+    <span id="sidebar-section-name">EXPLORER</span>
+  </div>
+
+  <!-- Scrollable content -->
+  <div class="flex-1 overflow-y-auto">
+
+    <!-- Explorer Panel (default) -->
+    <div class="sidebar-panel block" id="panel-explorer">
+      <!-- File actions -->
+      <div class="flex items-center justify-end px-2 py-1 gap-1" style="border-bottom:1px solid rgba(255,255,255,0.05);">
+        <button id="btn-new-file" class="w-6 h-6 flex items-center justify-center rounded cursor-pointer border-none transition-colors hover:bg-white/10" style="color:var(--vscode-text-dim);background:transparent;" title="New File">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><line x1="9" y1="15" x2="15" y2="15"/></svg>
+        </button>
+        <button id="btn-new-folder" class="w-6 h-6 flex items-center justify-center rounded cursor-pointer border-none transition-colors hover:bg-white/10" style="color:var(--vscode-text-dim);background:transparent;" title="New Folder">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/><line x1="12" y1="11" x2="12" y2="17"/><line x1="9" y1="14" x2="15" y2="14"/></svg>
+        </button>
+      </div>
+      <!-- Tree container -->
+      <div id="vfs-tree" class="py-1"></div>
+    </div>
+
+    <!-- History Panel -->
+    <div class="sidebar-panel hidden" id="panel-history">
+      <div id="history-list-empty" class="flex flex-col items-center justify-center py-16 gap-2 opacity-50">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" style="color:var(--vscode-text-dim)"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 3.5"/></svg>
+        <span class="text-[12px]" style="color:var(--vscode-text-dim)">No history yet</span>
+      </div>
+      <div id="history-list" class="hidden py-1"></div>
+    </div>
+
+    <!-- Settings Panel -->
+    <div class="sidebar-panel hidden py-3 px-3" id="panel-settings">
+      <p class="text-[10px] uppercase tracking-wider mb-3 opacity-50 font-semibold" style="color:var(--vscode-text)">Editor Preferences</p>
+
+      {[
+        { id: 'setting-theme', label: 'Color Theme', opts: [['dark','Dark+ (default)'],['light','Light (Visual Studio)'],['cyberpunk','Cyberpunk Neon']] },
+        { id: 'setting-fontsize', label: 'Font Size', opts: [['12','12px'],['14','14px (default)'],['16','16px'],['18','18px'],['20','20px']] },
+        { id: 'setting-tabsize', label: 'Tab Size', opts: [['2','2 Spaces'],['4','4 Spaces'],['8','8 Spaces']] },
+        { id: 'setting-wrap', label: 'Word Wrap', opts: [['on','On'],['off','Off']] },
+        { id: 'setting-autorun', label: 'Auto Run', opts: [['off','Manual'],['debounce','On change (1s)']] },
+      ].map(s => (
+        <div class="mb-4">
+          <label class="block text-[11px] mb-1 opacity-70 font-medium" style="color:var(--vscode-text)" for={s.id}>{s.label}</label>
+          <select id={s.id}
+            class="w-full px-2 py-1.5 rounded-sm text-[12px] border outline-none transition-colors"
+            style="background:var(--vscode-bg);color:var(--vscode-text);border-color:var(--vscode-border);">
+            {s.opts.map(([val, lbl]) => (
+              <option value={val}>{lbl}</option>
+            ))}
+          </select>
+        </div>
+      ))}
+    </div>
+
+  </div>
+</aside>
+
+<script>
+  // Sidebar tab switching (triggered by activity bar)
+  const tabs = document.querySelectorAll('.sidebar-tab-btn');
+  const panels = document.querySelectorAll('.sidebar-panel');
+  const sectionName = document.getElementById('sidebar-section-name');
+
+  tabs.forEach(tab => {
+    tab.addEventListener('click', () => {
+      panels.forEach(p => { p.classList.remove('block'); p.classList.add('hidden'); });
+      const target = tab.getAttribute('data-tab');
+      const panel = document.getElementById(`panel-${target}`);
+      if (panel) { panel.classList.remove('hidden'); panel.classList.add('block'); }
+      if (sectionName) sectionName.textContent = (target || '').toUpperCase();
+    });
+  });
+</script>

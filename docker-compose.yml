@@ -1,0 +1,36 @@
+# docker-compose.yml
+# Local development orchestration for the Antigravity JS Compiler
+#
+# Usage:
+#   docker-compose up        → Start the backend API server
+#   docker-compose up -d     → Start in background (detached)
+#   docker-compose down      → Stop and remove containers
+#
+# The Astro frontend still runs separately via: pnpm run dev
+
+version: '3.9'
+
+services:
+  api:
+    build:
+      context: ./server
+      dockerfile: Dockerfile
+    container_name: antigravity-api
+    ports:
+      - "3001:3001"
+    environment:
+      - PORT=3001
+      - FRONTEND_URL=http://localhost:4321
+    # Mount the host Docker socket so the API can spawn child containers
+    # This enables Docker-in-Docker (DinD) behavior
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      # Also mount tmp so the API can write temp files accessible to Docker
+      - /tmp:/tmp
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:3001/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s

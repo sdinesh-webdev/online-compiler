@@ -1,0 +1,217 @@
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,100..800;1,100..800&family=Inter:wght@300;400;500;600;700&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --color-vscode-bg:          var(--vscode-bg);
+  --color-vscode-sidebar:     var(--vscode-sidebar);
+  --color-vscode-panel:       var(--vscode-panel);
+  --color-vscode-editor:      var(--vscode-editor);
+  --color-vscode-titlebar:    var(--vscode-titlebar);
+  --color-vscode-tab-active:  var(--vscode-tab-active);
+  --color-vscode-tab-hover:   var(--vscode-tab-hover);
+  --color-vscode-border:      var(--vscode-border);
+  --color-vscode-accent:      var(--vscode-accent);
+  --color-vscode-accent2:     var(--vscode-accent2);
+  --color-vscode-text:        var(--vscode-text);
+  --color-vscode-text-dim:    var(--vscode-text-dim);
+  --color-vscode-text-muted:  var(--vscode-text-muted);
+  --color-vscode-statusbar:   var(--vscode-statusbar);
+  --color-vscode-activitybar: var(--vscode-activitybar);
+
+  /* Legacy compat aliases */
+  --color-bg-primary:         var(--vscode-editor);
+  --color-bg-secondary:       var(--vscode-sidebar);
+  --color-bg-tertiary:        var(--vscode-panel);
+  --color-bg-card:            var(--vscode-panel);
+  --color-border-color:       var(--vscode-border);
+  --color-border-focus:       var(--vscode-accent);
+  --color-text-primary:       var(--vscode-text);
+  --color-text-secondary:     var(--vscode-text-dim);
+  --color-text-muted:         var(--vscode-text-muted);
+  --color-accent-primary:     var(--vscode-accent);
+  --color-accent-secondary:   var(--vscode-accent2);
+  --color-accent-glow:        rgba(77, 182, 172, 0.12);
+  --color-status-success:     #4ec9b0;
+  --color-status-success-bg:  rgba(78, 201, 176, 0.10);
+  --color-status-error:       #f48771;
+  --color-status-error-bg:    rgba(244, 135, 113, 0.10);
+  --color-status-warning:     #cca700;
+  --color-status-warning-bg:  rgba(204, 167, 0, 0.10);
+  --color-status-info:        #75beff;
+  --color-status-info-bg:     rgba(117, 190, 255, 0.10);
+
+  --font-sans: var(--font-sans);
+  --font-mono: var(--font-mono);
+  --shadow-glow: var(--shadow-glow);
+}
+
+/* ─── VS Code Dark+ Theme ────────────────────────────────────────────────── */
+:root {
+  --vscode-bg:          #1e1e1e;
+  --vscode-editor:      #1e1e1e;
+  --vscode-sidebar:     #252526;
+  --vscode-panel:       #1e1e1e;
+  --vscode-titlebar:    #323233;
+  --vscode-tab-active:  #1e1e1e;
+  --vscode-tab-hover:   #2d2d2d;
+  --vscode-border:      #3c3c3c;
+  --vscode-accent:      #4db6ac;
+  --vscode-accent2:     #569cd6;
+  --vscode-text:        #cccccc;
+  --vscode-text-dim:    #858585;
+  --vscode-text-muted:  #555555;
+  --vscode-statusbar:   #007acc;
+  --vscode-activitybar: #333333;
+
+  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-mono: 'JetBrains Mono', 'Cascadia Code', Consolas, monospace;
+  --shadow-glow: 0 0 0 1px rgba(77, 182, 172, 0.25);
+
+  --sidebar-width: 260px;
+  --activitybar-width: 48px;
+  --header-height: 35px;
+  --tabbar-height: 35px;
+  --statusbar-height: 22px;
+
+  /* Legacy compat */
+  --bg-primary: var(--vscode-editor);
+  --bg-secondary: var(--vscode-sidebar);
+  --bg-tertiary: var(--vscode-panel);
+  --bg-card: var(--vscode-panel);
+  --border-color: var(--vscode-border);
+  --border-focus: var(--vscode-accent);
+  --text-primary: var(--vscode-text);
+  --text-secondary: var(--vscode-text-dim);
+  --text-muted: var(--vscode-text-muted);
+  --accent-primary: var(--vscode-accent);
+  --accent-secondary: var(--vscode-accent2);
+  --accent-glow: rgba(77, 182, 172, 0.12);
+  --gradient-brand: linear-gradient(135deg, #4db6ac 0%, #569cd6 100%);
+  --status-success: #4ec9b0;
+  --status-success-bg: rgba(78, 201, 176, 0.10);
+  --status-error: #f48771;
+  --status-error-bg: rgba(244, 135, 113, 0.10);
+  --status-warning: #cca700;
+  --status-warning-bg: rgba(204, 167, 0, 0.10);
+  --status-info: #75beff;
+  --status-info-bg: rgba(117, 190, 255, 0.10);
+  --shadow-sm: 0 1px 2px rgba(0,0,0,0.3);
+  --shadow-md: 0 4px 8px rgba(0,0,0,0.4);
+  --shadow-lg: 0 10px 20px rgba(0,0,0,0.5);
+}
+
+/* ─── Light Theme ─────────────────────────────────────────────────────────── */
+[data-theme="light"] {
+  --vscode-bg:          #ffffff;
+  --vscode-editor:      #ffffff;
+  --vscode-sidebar:     #f3f3f3;
+  --vscode-panel:       #f3f3f3;
+  --vscode-titlebar:    #dddddd;
+  --vscode-tab-active:  #ffffff;
+  --vscode-tab-hover:   #e8e8e8;
+  --vscode-border:      #e0e0e0;
+  --vscode-accent:      #007acc;
+  --vscode-accent2:     #0000ff;
+  --vscode-text:        #333333;
+  --vscode-text-dim:    #616161;
+  --vscode-text-muted:  #aaaaaa;
+  --vscode-statusbar:   #007acc;
+  --vscode-activitybar: #2c2c2c;
+
+  --bg-primary: #ffffff;
+  --bg-secondary: #f3f3f3;
+  --bg-tertiary: #ececec;
+  --bg-card: #f3f3f3;
+  --border-color: #e0e0e0;
+  --border-focus: #007acc;
+  --text-primary: #333333;
+  --text-secondary: #616161;
+  --text-muted: #aaaaaa;
+  --accent-primary: #007acc;
+  --accent-secondary: #0000ff;
+  --accent-glow: rgba(0, 122, 204, 0.08);
+  --gradient-brand: linear-gradient(135deg, #007acc 0%, #005999 100%);
+}
+
+/* ─── Cyberpunk Theme ─────────────────────────────────────────────────────── */
+[data-theme="cyberpunk"] {
+  --vscode-bg:          #0c0813;
+  --vscode-editor:      #0c0813;
+  --vscode-sidebar:     #150b20;
+  --vscode-panel:       #100918;
+  --vscode-titlebar:    #1a0826;
+  --vscode-tab-active:  #0c0813;
+  --vscode-tab-hover:   #1a1028;
+  --vscode-border:      #ff007f44;
+  --vscode-accent:      #ff007f;
+  --vscode-accent2:     #00ffff;
+  --vscode-text:        #00ffff;
+  --vscode-text-dim:    #ff007f;
+  --vscode-text-muted:  #bd00ff;
+  --vscode-statusbar:   #ff007f;
+  --vscode-activitybar: #150b20;
+
+  --bg-primary: #0c0813;
+  --bg-secondary: #150b20;
+  --bg-tertiary: #1a0826;
+  --border-color: #ff007f44;
+  --text-primary: #00ffff;
+  --text-secondary: #ff007f;
+  --text-muted: #bd00ff;
+  --accent-primary: #ff007f;
+  --accent-secondary: #00ffff;
+  --accent-glow: rgba(255, 0, 127, 0.12);
+  --gradient-brand: linear-gradient(135deg, #ff007f 0%, #bd00ff 50%, #00ffff 100%);
+  --shadow-glow: 0 0 20px rgba(255, 0, 127, 0.3);
+}
+
+/* ─── Base ────────────────────────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; }
+
+body {
+  background-color: var(--vscode-bg);
+  color: var(--vscode-text);
+  font-family: var(--font-sans);
+  height: 100vh;
+  overflow: hidden;
+  font-size: 13px;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+/* ─── Scrollbars (VS Code style) ──────────────────────────────────────────── */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(121,121,121,0.4); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(121,121,121,0.7); }
+
+/* ─── Toast notification ──────────────────────────────────────────────────── */
+#toast-notification.show { transform: translateY(0) !important; opacity: 1 !important; }
+
+/* ─── Sidebar collapsed ──────────────────────────────────────────────────── */
+#app-sidebar.sidebar-collapsed {
+  width: 0 !important;
+  overflow: hidden;
+  border-right-width: 0;
+}
+
+/* ─── Object tree toggle ─────────────────────────────────────────────────── */
+.obj-toggle::before {
+  content: '▶';
+  font-size: 9px;
+  display: inline-block;
+  transition: transform 0.15s;
+  margin-right: 4px;
+}
+.obj-toggle.expanded::before { transform: rotate(90deg); }
+
+/* ─── Active tab underline ───────────────────────────────────────────────── */
+.sidebar-tab-btn.active-tab {
+  color: var(--vscode-text) !important;
+  background: var(--vscode-tab-active) !important;
+  border-bottom-color: var(--vscode-accent) !important;
+}
+.output-tab-btn.active {
+  color: var(--vscode-text) !important;
+  border-bottom-color: var(--vscode-accent) !important;
+  background: var(--vscode-editor) !important;
+}
