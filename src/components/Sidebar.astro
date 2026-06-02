@@ -62,7 +62,7 @@
         { id: 'setting-fontsize', label: 'Font Size', opts: [['12','12px'],['14','14px (default)'],['16','16px'],['18','18px'],['20','20px']] },
         { id: 'setting-tabsize', label: 'Tab Size', opts: [['2','2 Spaces'],['4','4 Spaces'],['8','8 Spaces']] },
         { id: 'setting-wrap', label: 'Word Wrap', opts: [['on','On'],['off','Off']] },
-        { id: 'setting-autorun', label: 'Auto Run', opts: [['off','Manual'],['debounce','On change (1s)']] },
+        { id: 'setting-autorun', label: 'Auto Run', opts: [['debounce','On change (1s)'], ['off','Manual']] },
       ].map(s => (
         <div class="mb-4">
           <label class="block text-[11px] mb-1 opacity-70 font-medium" style="color:var(--vscode-text)" for={s.id}>{s.label}</label>

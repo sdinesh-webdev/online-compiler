@@ -23,6 +23,13 @@
 
     <!-- Right controls -->
     <div class="flex items-center gap-1.5 px-3">
+      <!-- Open Preview in New Tab -->
+      <button id="btn-open-preview" title="Open Preview in New Tab"
+        class="hidden w-6 h-6 flex items-center justify-center rounded border-none cursor-pointer transition-colors hover:bg-white/10"
+        style="background:transparent;color:var(--vscode-text-dim);">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
+      </button>
+      
       <!-- Filter input -->
       <div class="flex items-center gap-1.5 px-2 py-1 rounded-sm text-[12px]" style="background:var(--vscode-bg);border:1px solid var(--vscode-border);">
         <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--vscode-text-muted)"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
@@ -87,12 +94,23 @@
         p.classList.add('hidden');
       });
       tab.classList.add('active');
-      const panelId = `output-panel-${tab.getAttribute('data-output-tab')}`;
+      
+      const tabId = tab.getAttribute('data-output-tab');
+      const panelId = `output-panel-${tabId}`;
       const panel = document.getElementById(panelId);
       if (panel) {
         panel.classList.remove('hidden');
         panel.classList.add('flex');
         if (panelId === 'output-panel-console') panel.classList.add('flex-col');
+      }
+      
+      const btnOpenPreview = document.getElementById('btn-open-preview');
+      if (btnOpenPreview) {
+        if (tabId === 'preview') {
+          btnOpenPreview.classList.remove('hidden');
+        } else {
+          btnOpenPreview.classList.add('hidden');
+        }
       }
     });
   });

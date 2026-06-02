@@ -201,10 +201,14 @@ import Console from './Console.astro';
   import * as monaco from 'monaco-editor';
   import editorWorker from 'monaco-editor/esm/vs/editor/editor.worker?worker';
   import tsWorker from 'monaco-editor/esm/vs/language/typescript/ts.worker?worker';
+  import htmlWorker from 'monaco-editor/esm/vs/language/html/html.worker?worker';
+  import cssWorker from 'monaco-editor/esm/vs/language/css/css.worker?worker';
 
   self.MonacoEnvironment = {
     getWorker(_: any, label: string) {
       if (label === 'javascript' || label === 'typescript') return new tsWorker();
+      if (label === 'html' || label === 'handlebars' || label === 'razor') return new htmlWorker();
+      if (label === 'css' || label === 'scss' || label === 'less') return new cssWorker();
       return new editorWorker();
     }
   };
@@ -420,7 +424,7 @@ import Console from './Console.astro';
       }
     };
 
-    ['javascript', 'typescript'].forEach(lang => {
+    ['javascript', 'typescript', 'html'].forEach(lang => {
       monaco.languages.registerCompletionItemProvider(lang, provider);
     });
   }
@@ -461,13 +465,34 @@ import Console from './Console.astro';
     localStorage.setItem('ag_vfs_state', JSON.stringify(vfs));
   }
 
+  function showEditorToast(message: string, isError: boolean = false) {
+    const toast = document.createElement('div');
+    const bgColor = isError ? 'bg-red-900/40 border-red-500/50 text-red-100' : 'bg-[#1e1e1e] border-[#333] text-white';
+    const icon = isError 
+      ? `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v4m0 4h.01"/></svg>`
+      : `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>`;
+      
+    toast.className = `fixed bottom-4 right-4 ${bgColor} border px-4 py-3 rounded shadow-xl text-[13px] z-[9999] flex items-center gap-3 transition-all duration-300 translate-y-4 opacity-0`;
+    toast.innerHTML = `${icon} <span>${message}</span>`;
+    document.body.appendChild(toast);
+    
+    toast.getBoundingClientRect();
+    
+    toast.classList.remove('translate-y-4', 'opacity-0');
+    
+    setTimeout(() => {
+      toast.classList.add('translate-y-4', 'opacity-0');
+      setTimeout(() => toast.remove(), 300);
+    }, 3000);
+  }
+
   function getFileIcon(name: string, type: 'file' | 'folder') {
     if (type === 'folder') return `<svg width="14" height="14" viewBox="0 0 24 24" fill="#dcb67a"><path d="M10 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2h-8l-2-2z"/></svg>`;
     if (name.endsWith('.js')) return `<svg width="14" height="14" viewBox="0 0 24 24" fill="#f7df1e"><rect x="3" y="3" width="18" height="18" rx="2"/><text x="13.5" y="17" font-family="Arial" font-size="11" font-weight="bold" fill="#000" text-anchor="middle">JS</text></svg>`;
     if (name.endsWith('.ts')) return `<svg width="14" height="14" viewBox="0 0 24 24" fill="#3178c6"><rect x="3" y="3" width="18" height="18" rx="2"/><text x="13.5" y="17" font-family="Arial" font-size="11" font-weight="bold" fill="#fff" text-anchor="middle">TS</text></svg>`;
     if (name.endsWith('.jsx') || name.endsWith('.tsx')) return `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#61dafb" stroke-width="2"><circle cx="12" cy="12" r="2" fill="#61dafb"/><ellipse cx="12" cy="12" rx="10" ry="3.5" transform="rotate(30 12 12)"/><ellipse cx="12" cy="12" rx="10" ry="3.5" transform="rotate(90 12 12)"/><ellipse cx="12" cy="12" rx="10" ry="3.5" transform="rotate(150 12 12)"/></svg>`;
-    if (name.endsWith('.html')) return `<svg width="14" height="14" viewBox="0 0 24 24" fill="#e34f26"><rect x="2" y="4" width="20" height="16" rx="2"/><text x="12" y="15" font-family="Arial" font-size="9" font-weight="bold" fill="#fff" text-anchor="middle">HTML</text></svg>`;
-    if (name.endsWith('.css')) return `<svg width="14" height="14" viewBox="0 0 24 24" fill="#1572b6"><rect x="2" y="4" width="20" height="16" rx="2"/><text x="12" y="15" font-family="Arial" font-size="9" font-weight="bold" fill="#fff" text-anchor="middle">CSS</text></svg>`;
+    if (name.endsWith('.html')) return `<svg width="14" height="14" viewBox="0 0 24 24" fill="#E34F26"><path d="m3 2 1.578 17.824L12 22l7.467-2.175L21 2H3Zm14.049 6.048H9.075l.172 2.016h7.697l-.626 6.565-4.246 1.381-4.281-1.455-.288-2.932h2.024l.16 1.411 2.4.815 2.346-.763.297-3.005H7.416l-.562-6.05h10.412l-.217 2.017Z"/></svg>`;
+    if (name.endsWith('.css')) return `<svg width="14" height="14" viewBox="0 0 128 128"><path fill="#1572B6" d="M18.814 114.123L8.76 1.352h110.48l-10.064 112.754-45.243 12.543-45.119-12.526z"/><path fill="#33A9DC" d="M64.001 117.062l36.559-10.136 8.601-96.354h-45.16v106.49z"/><path fill="#fff" d="M64.001 51.429h18.302l1.264-14.163H64.001V23.435h34.682l-.332 3.711-3.4 38.114h-30.95V51.429z"/><path fill="#EBEBEB" d="M64.083 87.349l-.061.018-15.403-4.159-.985-11.031H33.752l1.937 21.717 28.331 7.863.063-.018v-14.39z"/><path fill="#fff" d="M81.127 64.675l-1.666 18.522-15.426 4.164v14.39l28.354-7.858.208-2.337 2.406-26.881H81.127z"/><path fill="#EBEBEB" d="M64.048 23.435v13.831H30.64l-.277-3.108-.63-7.012-.331-3.711h34.646zm-.047 27.996v13.831H48.792l-.277-3.108-.631-7.012-.33-3.711h16.447z"/></svg>`;
     return `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#cccccc" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>`;
   }
 
@@ -508,9 +533,18 @@ import Console from './Console.astro';
           icon.innerHTML = getFileIcon(input.value.trim(), node.type);
         });
         
+        let committed = false;
         const commit = () => {
+          if (committed) return;
+          committed = true;
           const newName = input.value.trim();
           if (newName && newName !== node.name) {
+            if (vfs.some(n => n.name === newName && n.parentId === node.parentId && n.id !== node.id)) {
+              showEditorToast(`A ${node.type} named "${newName}" already exists in this folder.`, true);
+              renamingItemId = null;
+              renderVFS();
+              return;
+            }
             node.name = newName;
             saveVFS();
             // Update editor tab label if active file is renamed
@@ -641,9 +675,18 @@ import Console from './Console.astro';
     container.appendChild(wrapper);
     input.focus();
     
+    let committed = false;
     const commit = () => {
+      if (committed) return;
+      committed = true;
       const name = input.value.trim();
       if (name) {
+        if (vfs.some(n => n.name === name && n.parentId === parentId)) {
+          showEditorToast(`A ${type} named "${name}" already exists in this folder.`, true);
+          creatingItem = null;
+          renderVFS();
+          return;
+        }
         if (type === 'file') {
           const newFile: VfsNode = {
             id: 'f-' + Date.now(),
@@ -717,6 +760,17 @@ import Console from './Console.astro';
     
     if (editorInstance) {
       editorInstance.setValue(file.content || '');
+      
+      let lang = 'javascript';
+      if (file.name.endsWith('.ts') || file.name.endsWith('.tsx')) lang = 'typescript';
+      else if (file.name.endsWith('.html')) lang = 'html';
+      else if (file.name.endsWith('.css')) lang = 'css';
+      else if (file.name.endsWith('.json')) lang = 'json';
+      
+      const model = editorInstance.getModel();
+      if (model) {
+        monaco.editor.setModelLanguage(model, lang);
+      }
     }
     renderTabs();
     renderVFS();
@@ -819,6 +873,7 @@ import Console from './Console.astro';
   let consoleLogsData: { element: HTMLElement }[] = [];
   let timerStore: Record<string, number> = {};
   let openTabIds: string[] = [];
+  let debounceTimeout: any = null;
 
   // ── DOM refs ──────────────────────────────────────────────────────────────
   const runBtn = document.getElementById('btn-run');
@@ -1008,6 +1063,11 @@ import Console from './Console.astro';
     renderHistory();
     probeBackend();
     initVFS();
+
+    const mode = (document.getElementById('setting-autorun') as HTMLSelectElement)?.value;
+    if (mode === 'debounce') {
+      setTimeout(() => executeJS(), 500);
+    }
   });
 
   // ── Settings ──────────────────────────────────────────────────────────────
@@ -1033,6 +1093,19 @@ import Console from './Console.astro';
   runBtn?.addEventListener('click', executeJS);
   clearConsoleBtn?.addEventListener('click', clearLogs);
   toggleSidebarBtn?.addEventListener('click', () => sidebar?.classList.toggle('sidebar-collapsed'));
+
+  document.getElementById('btn-open-preview')?.addEventListener('click', () => {
+    if (previewIframe && previewIframe.srcdoc) {
+      const newWin = window.open('', '_blank');
+      if (newWin) {
+        newWin.document.open();
+        newWin.document.write(previewIframe.srcdoc);
+        newWin.document.close();
+      }
+    } else {
+      showToast('❌ No preview to open');
+    }
+  });
 
   formatBtn?.addEventListener('click', () => {
     if (!editorInstance) return;
@@ -1284,8 +1357,46 @@ import Console from './Console.astro';
             const presets: string[] = ['env'];
             if (isReactFile) presets.push('react');
             if (isTSFile) presets.push('typescript');
+            
+            // Custom plugin to hoist top-level variables and functions to window
+            const hoistGlobalsPlugin = function(babel: any) {
+              const t = babel.types;
+              return {
+                visitor: {
+                  FunctionDeclaration(path: any) {
+                    if (path.parent.type === 'Program' && path.node.id) {
+                      const name = path.node.id.name;
+                      const assign = t.expressionStatement(
+                        t.assignmentExpression('=', t.memberExpression(t.identifier('window'), t.identifier(name)), t.identifier(name))
+                      );
+                      path.insertAfter(assign);
+                    }
+                  },
+                  VariableDeclaration(path: any) {
+                    if (path.parent.type === 'Program') {
+                      const assignments: any[] = [];
+                      path.node.declarations.forEach((decl: any) => {
+                        if (t.isIdentifier(decl.id)) {
+                          const name = decl.id.name;
+                          assignments.push(
+                            t.expressionStatement(
+                              t.assignmentExpression('=', t.memberExpression(t.identifier('window'), t.identifier(name)), t.identifier(name))
+                            )
+                          );
+                        }
+                      });
+                      if (assignments.length > 0) {
+                        path.insertAfter(assignments);
+                      }
+                    }
+                  }
+                }
+              };
+            };
+
             const result = Babel.transform(processedCode, {
               presets,
+              plugins: [hoistGlobalsPlugin],
               filename: file.name,
             });
             transpiledCode = result.code || processedCode;
@@ -1298,7 +1409,37 @@ import Console from './Console.astro';
         modules[path] = transpiledCode;
       });
 
-      const entryPath = activeFileId ? getFilePath(activeFileId) : '/' + fileName;
+      let htmlContent = '<div id="root"></div>';
+      const indexHtmlFile = vfs.find(n => n.type === 'file' && n.name === 'index.html');
+      if (indexHtmlFile && indexHtmlFile.content) {
+        try {
+          const parser = new DOMParser();
+          const doc = parser.parseFromString(indexHtmlFile.content, 'text/html');
+          
+          // Strip out local <script src="..."> tags to prevent 404 errors
+          const scripts = doc.querySelectorAll('script[src]');
+          scripts.forEach(s => {
+            const src = s.getAttribute('src');
+            if (src && !src.startsWith('http') && !src.startsWith('//')) {
+              s.remove();
+            }
+          });
+          
+          htmlContent = doc.body.innerHTML;
+        } catch(e) {
+          htmlContent = indexHtmlFile.content;
+        }
+      }
+
+      let entryFile = activeFileId ? vfs.find(n => n.id === activeFileId) : null;
+      const isScript = (name: string) => name.endsWith('.js') || name.endsWith('.jsx') || name.endsWith('.ts') || name.endsWith('.tsx');
+      
+      if (!entryFile || !isScript(entryFile.name)) {
+        entryFile = vfs.find(n => n.type === 'file' && (n.name === 'main.js' || n.name === 'index.js' || n.name === 'App.js' || n.name === 'main.tsx' || n.name === 'index.tsx'))
+                 || vfs.find(n => n.type === 'file' && isScript(n.name));
+      }
+      
+      const entryPath = entryFile ? getFilePath(entryFile.id) : '/script.js';
       const safeModules = JSON.stringify(modules);
       const safeEntry = JSON.stringify(entryPath);
       const safeCss = JSON.stringify(css);
@@ -1396,10 +1537,21 @@ import Console from './Console.astro';
           var possibleExts = ['', '.js', '.jsx', '.ts', '.tsx', '/index.js', '/index.jsx'];
           var finalPath = null;
           for (var i = 0; i < possibleExts.length; i++) {
-            if (modulesData[resolvedPath + possibleExts[i]]) {
+            if (modulesData[resolvedPath + possibleExts[i]] !== undefined) {
                finalPath = resolvedPath + possibleExts[i];
                break;
             }
+          }
+
+          if (!finalPath) {
+             // Try one more time by stripping the starting slash if it exists
+             var noSlash = resolvedPath.replace(/^\\//, '');
+             for (var i = 0; i < possibleExts.length; i++) {
+                if (modulesData['/' + noSlash + possibleExts[i]] !== undefined) {
+                   finalPath = '/' + noSlash + possibleExts[i];
+                   break;
+                }
+             }
           }
 
           if (!finalPath) throw new Error('Module not found: ' + moduleName);
@@ -1416,7 +1568,15 @@ import Console from './Console.astro';
           return module.exports;
         }
 
-        require(entryPath, '/');
+        if (entryPath && entryPath !== '/script.js') {
+           require(entryPath, '/');
+        } else {
+           // If no entry path was clearly defined but we have modules, try the first one
+           var moduleKeys = Object.keys(modulesData);
+           if (moduleKeys.length > 0) {
+              require(moduleKeys[0], '/');
+           }
+        }
         window.parent.postMessage({channel:'compile_complete',status:'success'},'*');
       } catch(err) {
         console.error(err.message || String(err));
@@ -1429,7 +1589,7 @@ import Console from './Console.astro';
   <\/script>
 <\/head>
 <body>
-  <div id="root"><\/div>
+  ${htmlContent}
 <\/body>
 <\/html>`;
 
