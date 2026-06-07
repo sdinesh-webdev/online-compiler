@@ -186,16 +186,15 @@ import Console from './Console.astro';
 <!-- Monaco Editor from CDN — avoids bundling ~50MB of source through Vite (prevents OOM during build) -->
 <script is:inline src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.52.2/min/vs/loader.min.js"></script>
 <script is:inline>
-  // Configure the AMD loader to find Monaco modules on the CDN
+  // Configure the AMD loader path.
+  // Layout.astro already created window._monacoReady as a deferred promise;
+  // we just resolve it here once the engine is fully loaded.
   require.config({
     paths: { vs: 'https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.52.2/min/vs' }
   });
-  // Expose monaco globally once loaded — the main script block waits on DOMContentLoaded anyway
-  window._monacoReady = new Promise(function(resolve) {
-    require(['vs/editor/editor.main'], function(monaco) {
-      window.monaco = monaco;
-      resolve(monaco);
-    });
+  require(['vs/editor/editor.main'], function(m) {
+    window.monaco = m;
+    if (typeof window._resolveMonaco === 'function') window._resolveMonaco(m);
   });
 </script>
 
@@ -214,9 +213,10 @@ import Console from './Console.astro';
 </script>
 
 <script>
-  // Monaco is loaded from CDN via the AMD loader (see <script> tags above).
-  // We declare it here only for TypeScript type checking in the Astro dev server.
-  declare const monaco: typeof import('monaco-editor');
+  // monaco is assigned inside the async IIFE below once the CDN engine resolves.
+  // Declared as `let` so every closure (event listeners, settings, etc.) sees the
+  // updated reference without needing window.monaco everywhere.
+  let monaco: typeof import('monaco-editor');
 
   // ── Professional Tailwind IntelliSense ────────────────────────────────────
   // Comprehensive list of Tailwind utility classes
@@ -434,7 +434,8 @@ import Console from './Console.astro';
     });
   }
 
-  registerTailwindCompletions();
+  // registerTailwindCompletions() is called inside the async IIFE below,
+  // after monaco is fully loaded from CDN.
 
   // ── Virtual File System ───────────────────────────────────────────────────
   type VfsNode = { id: string, name: string, type: 'file' | 'folder', content?: string, parentId: string | null };
@@ -937,6 +938,12 @@ import Console from './Console.astro';
   // Monaco loads asynchronously from CDN via AMD require — wait for it before init.
   (async () => {
     await (window as any)._monacoReady;
+    // Assign the module-level `monaco` let so every closure in this module
+    // (settings handlers, theme switcher, key bindings, etc.) sees the real object.
+    monaco = (window as any).monaco;
+    // Register Tailwind IntelliSense now that monaco.languages is available.
+    registerTailwindCompletions();
+
     const mount = document.getElementById('editor-mount')!;
     mount.innerHTML = '';
 
