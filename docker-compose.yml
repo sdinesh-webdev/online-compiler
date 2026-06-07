@@ -1,5 +1,5 @@
 # docker-compose.yml
-# Local development orchestration for the Antigravity JS Compiler
+# Local development orchestration for the VSCompiler JS Compiler
 #
 # Usage:
 #   docker-compose up        → Start the backend API server
@@ -15,7 +15,7 @@ services:
     build:
       context: ./server
       dockerfile: Dockerfile
-    container_name: antigravity-api
+    container_name: vscompiler-api
     ports:
       - "3001:3001"
     environment:

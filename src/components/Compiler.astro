@@ -11,8 +11,8 @@ import Console from './Console.astro';
   <div class="flex items-center h-[var(--header-height)] shrink-0" style="background:var(--vscode-titlebar); border-bottom:1px solid var(--vscode-border);">
     <!-- App logo + name -->
     <div class="flex items-center gap-2 px-3 shrink-0">
-      <div class="w-[18px] h-[18px] rounded-sm flex items-center justify-center font-black text-[10px] text-white" style="background:linear-gradient(135deg,#4db6ac,#569cd6)">AG</div>
-      <span class="text-[12px] font-semibold" style="color:var(--vscode-text)">Antigravity</span>
+      <div class="w-[18px] h-[18px] rounded-sm flex items-center justify-center font-black text-[10px] text-white" style="background:linear-gradient(135deg,#007acc,#2a2d2e)">VS</div>
+      <span class="text-[12px] font-semibold" style="color:var(--vscode-text)">VSCompiler</span>
     </div>
 
     <!-- Menu bar -->
@@ -23,7 +23,7 @@ import Console from './Console.astro';
         'View': [{label: 'Toggle Sidebar', action: 'toggle-sidebar'}, {label: 'Toggle Console', action: 'toggle-console'}],
         'Run': [{label: 'Run Code (Ctrl+Enter)', action: 'run'}],
         'Terminal': [{label: 'Clear Terminal', action: 'clear-terminal'}],
-        'Help': [{label: 'About Antigravity', action: 'about'}]
+        'Help': [{label: 'About VSCompiler', action: 'about'}]
       }).map(([menuName, items]) => (
         <div class="relative h-full menu-item-container">
           <button class="menu-btn px-[10px] h-full text-[12px] border-none bg-transparent cursor-pointer transition-colors hover:bg-white/10" style="color:var(--vscode-text-dim)">{menuName}</button>
@@ -133,7 +133,7 @@ import Console from './Console.astro';
     <!-- Left status items -->
     <span class="flex items-center gap-1 opacity-90">
       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-      Antigravity JS Compiler
+      VSCompiler JS Compiler
     </span>
     <span class="opacity-70">|</span>
     <span id="exec-engine-badge" class="flex items-center gap-1 opacity-90">
@@ -1292,9 +1292,10 @@ import Console from './Console.astro';
           body: JSON.stringify({ code }),
         });
         const result = await res.json();
-        (result.output || '').split('\n').filter(Boolean).forEach((line: string) => {
-          appendLog(result.status === 'success' ? 'log' : 'error', [line]);
-        });
+        const outputLines = (result.output || '').trim();
+        if (outputLines) {
+          appendLog(result.status === 'success' ? 'log' : 'error', [outputLines]);
+        }
         updateExecutionStats(result.status === 'success', result.execTime ?? 0);
         saveToHistory(code);
       } catch {
@@ -1641,7 +1642,79 @@ import Console from './Console.astro';
 
     const content = document.createElement('div');
     content.style.cssText = 'flex:1;white-space:pre-wrap;word-break:break-all;';
+    
+    const rawErrorText = args.map(arg => typeof arg === 'string' ? arg : JSON.stringify(arg)).join(' ');
     args.forEach(arg => content.appendChild(createVisualElement(serializeValue(arg))));
+    
+    if (level === 'error') {
+      const explainBtn = document.createElement('button');
+      explainBtn.innerHTML = '✨ Explain Error';
+      explainBtn.style.cssText = 'margin-top:4px;display:block;background:rgba(255,255,255,0.1);border:none;color:#ccc;border-radius:4px;padding:2px 8px;font-size:10px;cursor:pointer;transition:background 0.2s;';
+      explainBtn.onmouseenter = () => explainBtn.style.background = 'rgba(255,255,255,0.2)';
+      explainBtn.onmouseleave = () => explainBtn.style.background = 'rgba(255,255,255,0.1)';
+      
+      const explainContainer = document.createElement('div');
+      explainContainer.style.cssText = 'margin-top:6px;padding:8px;background:rgba(0,0,0,0.2);border-radius:4px;border:1px solid rgba(255,255,255,0.05);display:none;color:#ddd;font-family:system-ui,sans-serif;line-height:1.4;';
+      
+      explainBtn.onclick = async () => {
+        explainBtn.style.display = 'none';
+        explainContainer.style.display = 'block';
+        
+        try {
+          const ai = (window as any).ai;
+          if (!ai) {
+             explainContainer.innerHTML = `<span style="color:#f48771;">Chrome Built-in AI is not enabled!</span><br><br>To use this feature, open a new tab and go to <b style="user-select:all;">chrome://flags/#prompt-api-for-gemini-nano</b>, set it to <b>Enabled</b>, and restart Chrome.`;
+             return;
+          }
+          
+          explainContainer.innerHTML = '<span style="opacity:0.6;">Thinking...</span>';
+          let session;
+          if (ai.languageModel && ai.languageModel.create) {
+             session = await ai.languageModel.create({
+                systemPrompt: "You are a helpful coding assistant. Explain the following JavaScript error concisely for a beginner."
+             });
+          } else if (ai.createTextSession) {
+             session = await ai.createTextSession();
+          } else {
+             throw new Error("AI session not supported.");
+          }
+          
+          const codeContext = editorInstance ? editorInstance.getValue() : '';
+          const prompt = `Error: ${rawErrorText}\n\nUser Code:\n${codeContext}\n\nExplain the error and suggest a fix in 2 short sentences.`;
+          
+          if (session.promptStreaming) {
+             const stream = await session.promptStreaming(prompt);
+             explainContainer.innerHTML = '';
+             let previousChunk = '';
+             for await (const chunk of stream) {
+               // Some Chrome versions return accumulated chunks, some return deltas.
+               // We handle accumulated chunks by assigning, or deltas by appending if it doesn't start with previous.
+               if (chunk.startsWith(previousChunk)) {
+                 explainContainer.textContent = chunk;
+               } else {
+                 explainContainer.textContent += chunk;
+               }
+               previousChunk = explainContainer.textContent || '';
+               
+               if (consoleLogs.scrollTop + 32 >= consoleLogs.scrollHeight - consoleLogs.clientHeight) {
+                 consoleLogs.scrollTop = consoleLogs.scrollHeight;
+               }
+             }
+          } else {
+             const response = await session.prompt(prompt);
+             explainContainer.textContent = response;
+          }
+        } catch (e: any) {
+          explainContainer.innerHTML = `<span style="color:#f48771;">AI failed: ${e.message}</span>`;
+          explainBtn.style.display = 'block';
+          explainBtn.textContent = 'Retry Explain Error';
+        }
+      };
+
+      content.appendChild(explainBtn);
+      content.appendChild(explainContainer);
+    }
+
     row.appendChild(content);
 
     const scrolledToBottom = consoleLogs.scrollTop + 32 >= consoleLogs.scrollHeight - consoleLogs.clientHeight;
@@ -1833,7 +1906,7 @@ import Console from './Console.astro';
         const btn = document.getElementById('btn-clear-console');
         if (btn) btn.click();
       } else if (type === 'about') {
-        alert('Antigravity JS Compiler\nPremium Online JavaScript Sandbox\nVersion 1.0.0');
+        alert('VSCompiler JS Compiler\nPremium Online JavaScript Sandbox\nVersion 1.0.0');
       }
     });
   });
