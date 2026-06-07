@@ -183,6 +183,22 @@ import Console from './Console.astro';
 <script is:inline src="https://unpkg.com/prettier@2.8.8/parser-babel.js"></script>
 <script is:inline src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 
+<!-- Monaco Editor from CDN — avoids bundling ~50MB of source through Vite (prevents OOM during build) -->
+<script is:inline src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.52.2/min/vs/loader.min.js"></script>
+<script is:inline>
+  // Configure the AMD loader to find Monaco modules on the CDN
+  require.config({
+    paths: { vs: 'https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.52.2/min/vs' }
+  });
+  // Expose monaco globally once loaded — the main script block waits on DOMContentLoaded anyway
+  window._monacoReady = new Promise(function(resolve) {
+    require(['vs/editor/editor.main'], function(monaco) {
+      window.monaco = monaco;
+      resolve(monaco);
+    });
+  });
+</script>
+
 <script>
   // Wire activity bar buttons to sidebar tabs
   document.querySelectorAll('.activity-btn').forEach(btn => {
@@ -198,20 +214,9 @@ import Console from './Console.astro';
 </script>
 
 <script>
-  import * as monaco from 'monaco-editor';
-  import editorWorker from 'monaco-editor/esm/vs/editor/editor.worker?worker';
-  import tsWorker from 'monaco-editor/esm/vs/language/typescript/ts.worker?worker';
-  import htmlWorker from 'monaco-editor/esm/vs/language/html/html.worker?worker';
-  import cssWorker from 'monaco-editor/esm/vs/language/css/css.worker?worker';
-
-  self.MonacoEnvironment = {
-    getWorker(_: any, label: string) {
-      if (label === 'javascript' || label === 'typescript') return new tsWorker();
-      if (label === 'html' || label === 'handlebars' || label === 'razor') return new htmlWorker();
-      if (label === 'css' || label === 'scss' || label === 'less') return new cssWorker();
-      return new editorWorker();
-    }
-  };
+  // Monaco is loaded from CDN via the AMD loader (see <script> tags above).
+  // We declare it here only for TypeScript type checking in the Astro dev server.
+  declare const monaco: typeof import('monaco-editor');
 
   // ── Professional Tailwind IntelliSense ────────────────────────────────────
   // Comprehensive list of Tailwind utility classes
@@ -924,14 +929,17 @@ import Console from './Console.astro';
 
   // ── Monaco init ───────────────────────────────────────────────────────────
   const initialHash = window.location.hash;
-  let initialCode = '// Write your JavaScript here\\nconsole.log("Hello, world!");\\n';
+  let initialCode = '// Write your JavaScript here\nconsole.log("Hello, world!");\n';
   if (initialHash.startsWith('#code=')) {
     try { initialCode = atob(initialHash.substring(6)); } catch (_) {}
   }
 
-  window.addEventListener('DOMContentLoaded', () => {
+  // Monaco loads asynchronously from CDN via AMD require — wait for it before init.
+  (async () => {
+    await (window as any)._monacoReady;
     const mount = document.getElementById('editor-mount')!;
     mount.innerHTML = '';
+
 
     // Define cyberpunk theme
     monaco.editor.defineTheme('cyberpunk', {
@@ -1070,7 +1078,7 @@ import Console from './Console.astro';
     if (mode === 'debounce') {
       setTimeout(() => executeJS(), 500);
     }
-  });
+  })(); // end async IIFE — waits for Monaco CDN load then inits editor
 
   // ── Settings ──────────────────────────────────────────────────────────────
   document.getElementById('setting-fontsize')?.addEventListener('change', e => {
