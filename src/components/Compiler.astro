@@ -898,7 +898,7 @@ import Console from './Console.astro';
   const execEngineLabel = document.getElementById('exec-engine-label');
 
   // ── Backend config ────────────────────────────────────────────────────────
-  const BACKEND_URL = 'http://localhost:3001';
+  const BACKEND_URL = import.meta.env.PUBLIC_BACKEND_URL || 'http://localhost:3001';
   let backendAvailable = false;
 
   async function probeBackend() {
