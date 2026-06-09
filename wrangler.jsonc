@@ -1,0 +1,9 @@
+// frontend/wrangler.jsonc
+{
+    "kv_namespaces": [
+        {
+            "binding": "KV_BINDING",
+            "id": "67b8f0df962041e495ffd5073e2942da"
+        }
+    ]
+}
