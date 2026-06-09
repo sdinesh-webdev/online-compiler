@@ -1,8 +1,12 @@
-// frontend/wrangler.jsonc
 {
+    "name": "vscompiler",
+    "compatibility_date": "2026-06-09",
+    "assets": {
+        "directory": "./dist/client"
+    },
     "kv_namespaces": [
         {
-            "binding": "KV_BINDING",
+            "binding": "SESSION",
             "id": "67b8f0df962041e495ffd5073e2942da"
         }
     ]
