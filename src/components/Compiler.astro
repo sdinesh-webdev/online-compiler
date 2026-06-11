@@ -1491,9 +1491,9 @@ import Console from './Console.astro';
       if (scriptsLoaded >= 3) runUserCode();
     }
 
-    // Tailwind CSS Play CDN (with fallback)
+    // Tailwind CSS Browser (with fallback)
     loadScript(
-      ['https://cdn.tailwindcss.com', 'https://unpkg.com/@tailwindcss/browser@4'],
+      ['https://unpkg.com/@tailwindcss/browser@4', 'https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4'],
       function(ok) { scriptsLoaded++; if (scriptsLoaded >= 3) runUserCode(); }
     );
 
@@ -1519,7 +1519,7 @@ import Console from './Console.astro';
       console.info=function(){_i.apply(console,arguments);send('info',arguments);};
       console.warn=function(){
         _w.apply(console,arguments);
-        if (arguments.length>0 && typeof arguments[0]==='string' && arguments[0].includes('cdn.tailwindcss.com')) return;
+        if (arguments.length>0 && typeof arguments[0]==='string' && (arguments[0].includes('cdn.tailwindcss.com') || arguments[0].includes('@tailwindcss/browser'))) return;
         send('warn',arguments);
       };
       console.error=function(){_e.apply(console,arguments);send('error',arguments);};
