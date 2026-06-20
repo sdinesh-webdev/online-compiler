@@ -71,7 +71,7 @@
     <!-- Preview iframe panel -->
     <div class="output-panel hidden h-full" id="output-panel-preview">
       <iframe id="preview-iframe" class="w-full h-full border-none" style="background:#1e1e1e;"
-        sandbox="allow-scripts"></iframe>
+        sandbox="allow-scripts allow-same-origin allow-popups"></iframe>
     </div>
   </div>
 </div>
@@ -85,6 +85,9 @@
 </style>
 
 <script>
+  import { store } from '../lib/store';
+  import { clearLogs, appendLog } from '../lib/console';
+
   // Tab switching
   document.querySelectorAll('.output-tab-btn').forEach(tab => {
     tab.addEventListener('click', () => {
@@ -113,5 +116,54 @@
         }
       }
     });
+  });
+
+  document.getElementById('btn-clear-console')?.addEventListener('click', clearLogs);
+
+  const consoleSearch = document.getElementById('console-search') as HTMLInputElement;
+  if (consoleSearch) {
+    consoleSearch.addEventListener('input', (e) => {
+      const term = (e.target as HTMLInputElement).value.toLowerCase();
+      store.consoleLogsData.forEach(({ element }) => {
+        if (!term) {
+          element.style.display = 'flex';
+        } else {
+          const match = element.textContent?.toLowerCase().includes(term);
+          element.style.display = match ? 'flex' : 'none';
+        }
+      });
+    });
+  }
+
+  const replField = document.getElementById('repl-input-field') as HTMLInputElement;
+  if (replField) {
+    replField.addEventListener('keydown', e => {
+      if (e.key === 'Enter') {
+        const cmd = replField.value.trim();
+        if (!cmd) return;
+        replField.value = '';
+        appendLog('system', ['> ' + cmd]);
+        
+        const iframe = document.getElementById('preview-iframe') as HTMLIFrameElement;
+        if (iframe && iframe.contentWindow) {
+          try {
+            // Note: cross-origin frame might throw, but since we set sandbox="allow-scripts allow-same-origin", it usually works locally.
+            const result = iframe.contentWindow.eval(cmd);
+            appendLog('info', [result]);
+          } catch (err: any) {
+            appendLog('error', [err.message]);
+          }
+        }
+      }
+    });
+  }
+
+  document.getElementById('btn-open-preview')?.addEventListener('click', () => {
+    const iframe = document.getElementById('preview-iframe') as HTMLIFrameElement;
+    if (iframe && iframe.srcdoc) {
+      const blob = new Blob([iframe.srcdoc], {type: 'text/html'});
+      const url = URL.createObjectURL(blob);
+      window.open(url, '_blank');
+    }
   });
 </script>

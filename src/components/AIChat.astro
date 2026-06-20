@@ -1,0 +1,926 @@
+---
+// AIChat — Antigravity-style AI Assistant panel, powered by OpenRouter
+const OPENROUTER_KEY   = import.meta.env.PUBLIC_OPENROUTER_API_KEY ?? '';
+const NEMOTRON_KEY     = import.meta.env.NVIDIA_NEMOTRON_3_NANO ?? OPENROUTER_KEY;
+---
+
+<div id="ai-chat-panel"
+  class="ai-chat-panel flex flex-col shrink-0 transition-all duration-300 overflow-hidden"
+  style="width:0;background:var(--vscode-sidebar);border-left:1px solid var(--vscode-border);">
+
+  <!-- ── Header ── -->
+  <div class="ai-chat-header flex items-center justify-between px-3 py-2 shrink-0"
+    style="border-bottom:1px solid var(--vscode-border);background:var(--vscode-sidebar);">
+    <div class="flex items-center gap-2">
+      <div class="ai-logo-wrap flex items-center justify-center w-6 h-6 rounded-md"
+        style="background:linear-gradient(135deg,#6c47ff 0%,#a855f7 100%);">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5">
+          <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
+        </svg>
+      </div>
+      <span class="text-[12px] font-semibold tracking-wide" style="color:var(--vscode-text)">AI Assistant</span>
+      <!-- Provider badge -->
+      <span class="text-[9px] px-1.5 py-px rounded font-semibold uppercase tracking-wider"
+        style="background:rgba(108,71,255,0.18);color:#a78bfa;border:1px solid rgba(108,71,255,0.3);">
+        OpenRouter
+      </span>
+    </div>
+    <div class="flex items-center gap-1">
+      <!-- New chat -->
+      <button id="ai-new-chat" title="New Chat"
+        class="w-6 h-6 flex items-center justify-center rounded border-none cursor-pointer transition-colors hover:bg-white/10"
+        style="background:transparent;color:var(--vscode-text-dim);">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M12 5v14M5 12h14"/>
+        </svg>
+      </button>
+      <!-- Close -->
+      <button id="ai-chat-close" title="Close"
+        class="w-6 h-6 flex items-center justify-center rounded border-none cursor-pointer transition-colors hover:bg-white/10"
+        style="background:transparent;color:var(--vscode-text-dim);">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M18 6L6 18M6 6l12 12"/>
+        </svg>
+      </button>
+    </div>
+  </div>
+
+  <!-- ── Context pills (active file) ── -->
+  <div id="ai-context-bar"
+    class="flex items-center gap-1.5 px-3 py-1.5 shrink-0 flex-wrap"
+    style="border-bottom:1px solid var(--vscode-border);min-height:32px;">
+    <span id="ai-context-file-pill"
+      class="hidden items-center gap-1 text-[10px] px-2 py-0.5 rounded-full font-medium"
+      style="background:rgba(108,71,255,0.18);color:#a78bfa;border:1px solid rgba(108,71,255,0.3);">
+      <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+        <polyline points="14 2 14 8 20 8"/>
+      </svg>
+      <span id="ai-context-file-name">untitled.js</span>
+    </span>
+    <!-- API key status indicator -->
+    <span id="ai-api-status" class="flex items-center gap-1 text-[10px] ml-auto"
+      style="color:var(--vscode-text-dim);">
+    </span>
+  </div>
+
+  <!-- ── Message history ── -->
+  <div id="ai-chat-history" class="flex-1 overflow-y-auto px-3 py-3 flex flex-col gap-3">
+    <!-- Welcome state -->
+    <div id="ai-chat-welcome" class="flex flex-col items-center justify-center h-full gap-4 py-8">
+      <div class="ai-welcome-icon flex items-center justify-center w-12 h-12 rounded-2xl"
+        style="background:linear-gradient(135deg,rgba(108,71,255,0.25) 0%,rgba(168,85,247,0.25) 100%);border:1px solid rgba(108,71,255,0.4);">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#a78bfa" stroke-width="1.8">
+          <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
+        </svg>
+      </div>
+      <div class="text-center">
+        <p class="text-[13px] font-semibold mb-1" style="color:var(--vscode-text)">AI Code Assistant</p>
+        <p class="text-[11px] leading-relaxed opacity-60" style="color:var(--vscode-text-dim)">
+          Powered by OpenRouter · Ask about your code,<br>get explanations, fix bugs or generate snippets.
+        </p>
+      </div>
+      <!-- Quick prompts -->
+      <div class="flex flex-col gap-2 w-full mt-1">
+        <button class="ai-quick-prompt text-left px-3 py-2 rounded-lg text-[11px] transition-all cursor-pointer border"
+          data-prompt="Explain what this code does step by step"
+          style="background:rgba(255,255,255,0.03);border-color:var(--vscode-border);color:var(--vscode-text-dim);">
+          💡 Explain this code
+        </button>
+        <button class="ai-quick-prompt text-left px-3 py-2 rounded-lg text-[11px] transition-all cursor-pointer border"
+          data-prompt="Find and fix any bugs or errors in this code"
+          style="background:rgba(255,255,255,0.03);border-color:var(--vscode-border);color:var(--vscode-text-dim);">
+          🐛 Fix bugs
+        </button>
+        <button class="ai-quick-prompt text-left px-3 py-2 rounded-lg text-[11px] transition-all cursor-pointer border"
+          data-prompt="Refactor this code to be cleaner and more efficient"
+          style="background:rgba(255,255,255,0.03);border-color:var(--vscode-border);color:var(--vscode-text-dim);">
+          ✨ Refactor code
+        </button>
+        <button class="ai-quick-prompt text-left px-3 py-2 rounded-lg text-[11px] transition-all cursor-pointer border"
+          data-prompt="Add complete JSDoc comments to document this code"
+          style="background:rgba(255,255,255,0.03);border-color:var(--vscode-border);color:var(--vscode-text-dim);">
+          📝 Add documentation
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Typing indicator (hidden by default) ── -->
+  <div id="ai-typing-indicator" class="hidden px-3 py-2 shrink-0">
+    <div class="flex items-center gap-2">
+      <div class="flex items-center justify-center w-5 h-5 rounded-md shrink-0"
+        style="background:linear-gradient(135deg,#6c47ff 0%,#a855f7 100%);">
+        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5">
+          <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
+        </svg>
+      </div>
+      <div class="flex gap-1 items-center">
+        <div class="ai-dot" style="animation-delay:0ms"></div>
+        <div class="ai-dot" style="animation-delay:150ms"></div>
+        <div class="ai-dot" style="animation-delay:300ms"></div>
+      </div>
+      <span class="text-[10px] opacity-50" style="color:var(--vscode-text-dim)" id="ai-typing-label">Thinking…</span>
+    </div>
+  </div>
+
+  <!-- ── Input area ── -->
+  <div class="ai-input-area px-3 pb-3 pt-2 shrink-0 relative" style="border-top:1px solid var(--vscode-border);">
+
+    <!-- Model dropdown (hidden, positioned above) -->
+    <div id="ai-model-dropdown" class="hidden absolute z-50 rounded-lg overflow-hidden shadow-2xl"
+      style="background:var(--vscode-sidebar);border:1px solid var(--vscode-border);min-width:220px;bottom:calc(100% + 4px);left:12px;">
+      <div class="px-3 py-2 text-[9px] uppercase tracking-widest font-semibold opacity-40 border-b"
+        style="color:var(--vscode-text);border-color:var(--vscode-border);">via OpenRouter</div>
+      <div id="ai-model-list" class="py-1"></div>
+    </div>
+
+    <!-- Model selector row -->
+    <div class="flex items-center justify-between mb-2">
+      <button class="flex items-center gap-1.5 px-2 py-1 rounded-md cursor-pointer transition-colors hover:bg-white/5 border-none"
+        id="ai-model-selector-btn"
+        style="border:1px solid var(--vscode-border);background:transparent;">
+        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#a78bfa" stroke-width="2">
+          <circle cx="12" cy="12" r="10"/>
+          <path d="M12 8v4l3 3"/>
+        </svg>
+        <span id="ai-model-label" class="text-[10px]" style="color:var(--vscode-text-dim)">Loading…</span>
+        <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+          style="color:var(--vscode-text-dim)">
+          <path d="M6 9l6 6 6-6"/>
+        </svg>
+      </button>
+      <!-- Context toggle -->
+      <label class="flex items-center gap-1.5 cursor-pointer select-none" title="Include editor code as context">
+        <input type="checkbox" id="ai-include-code" checked class="ai-toggle-cb" />
+        <span class="ai-toggle-track"></span>
+        <span class="text-[10px]" style="color:var(--vscode-text-dim)">Include code</span>
+      </label>
+    </div>
+
+    <!-- Textarea + send -->
+    <div id="ai-input-wrap" class="flex gap-2 items-end rounded-lg px-3 py-2"
+      style="background:var(--vscode-bg);border:1px solid var(--vscode-border);">
+      <textarea id="ai-chat-input" rows="1"
+        placeholder="Ask AI anything about your code…"
+        autocomplete="off" spellcheck="true"
+        class="flex-1 bg-transparent border-none outline-none resize-none text-[12px] leading-[1.6] overflow-hidden"
+        style="color:var(--vscode-text);max-height:120px;min-height:20px;font-family:inherit;"></textarea>
+      <button id="ai-send-btn"
+        class="flex items-center justify-center w-7 h-7 rounded-md border-none cursor-pointer transition-all shrink-0 mb-px"
+        style="background:linear-gradient(135deg,#6c47ff,#a855f7);color:white;"
+        title="Send (Enter)">
+        <svg id="ai-send-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/>
+        </svg>
+        <!-- Stop icon (shown while streaming) -->
+        <svg id="ai-stop-icon" class="hidden" width="11" height="11" viewBox="0 0 24 24" fill="currentColor">
+          <rect x="4" y="4" width="16" height="16" rx="2"/>
+        </svg>
+      </button>
+    </div>
+
+    <p class="text-[9px] mt-1.5 text-center opacity-30" style="color:var(--vscode-text-dim)">
+      Enter to send · Shift+Enter for newline
+    </p>
+  </div>
+</div>
+
+<style>
+  /* ── Panel open/close ── */
+  #ai-chat-panel.ai-chat-open {
+    width: 300px !important;
+  }
+
+  /* ── Dot animation ── */
+  .ai-dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: #a78bfa;
+    animation: ai-bounce 0.9s ease-in-out infinite;
+  }
+  @keyframes ai-bounce {
+    0%, 80%, 100% { transform: scale(0.6); opacity: 0.4; }
+    40%            { transform: scale(1.0); opacity: 1;   }
+  }
+
+  /* ── Toggle switch ── */
+  .ai-toggle-cb { display: none; }
+  .ai-toggle-track {
+    display: inline-block; width: 24px; height: 13px;
+    border-radius: 999px; background: var(--vscode-border);
+    position: relative; transition: background 0.2s; flex-shrink: 0;
+  }
+  .ai-toggle-track::after {
+    content: ''; position: absolute; top: 2px; left: 2px;
+    width: 9px; height: 9px; border-radius: 50%;
+    background: #888; transition: transform 0.2s, background 0.2s;
+  }
+  .ai-toggle-cb:checked + .ai-toggle-track { background: rgba(108,71,255,0.5); }
+  .ai-toggle-cb:checked + .ai-toggle-track::after {
+    transform: translateX(11px); background: #a78bfa;
+  }
+
+  /* ── Message bubbles ── */
+  .ai-msg { display: flex; flex-direction: column; gap: 4px; animation: ai-msg-in 0.2s ease-out; }
+  @keyframes ai-msg-in {
+    from { opacity: 0; transform: translateY(6px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  .ai-msg-user .ai-bubble {
+    background: linear-gradient(135deg, rgba(108,71,255,0.22), rgba(168,85,247,0.18));
+    border: 1px solid rgba(108,71,255,0.35);
+    border-radius: 12px 12px 3px 12px;
+    align-self: flex-end; max-width: 92%;
+  }
+  .ai-msg-assistant .ai-bubble {
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.07);
+    border-radius: 3px 12px 12px 12px;
+    align-self: flex-start; max-width: 96%;
+  }
+  .ai-bubble {
+    padding: 10px 14px; font-size: 12.5px; line-height: 1.65;
+    color: var(--vscode-text); word-break: break-word;
+  }
+
+  /* ── Inline code ── */
+  .ai-bubble code {
+    font-family: 'JetBrains Mono', 'Cascadia Code', Consolas, monospace;
+    font-size: 11px;
+    background: rgba(108,71,255,0.18);
+    color: #c4b5fd;
+    padding: 1px 5px;
+    border-radius: 4px;
+    border: 1px solid rgba(108,71,255,0.25);
+  }
+
+  /* ── Code block wrapper ── */
+  .ai-code-block {
+    margin: 8px 0;
+    border-radius: 8px;
+    overflow: hidden;
+    border: 1px solid rgba(255,255,255,0.09);
+    background: #0d1117;
+  }
+
+  /* ── Code block header bar ── */
+  .ai-code-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 5px 12px;
+    background: rgba(255,255,255,0.05);
+    border-bottom: 1px solid rgba(255,255,255,0.07);
+    user-select: none;
+  }
+  .ai-code-lang-badge {
+    font-family: 'JetBrains Mono', Consolas, monospace;
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: #a78bfa;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+  }
+  .ai-code-lang-badge::before {
+    content: '';
+    display: inline-block;
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    background: currentColor;
+    opacity: 0.7;
+  }
+  .ai-copy-btn {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 10px;
+    font-family: inherit;
+    color: rgba(255,255,255,0.4);
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    padding: 2px 6px;
+    border-radius: 4px;
+    transition: color 0.15s, background 0.15s;
+  }
+  .ai-copy-btn:hover {
+    color: #a78bfa;
+    background: rgba(108,71,255,0.15);
+  }
+  .ai-copy-btn.copied {
+    color: #4ade80 !important;
+  }
+
+  /* ── Code content ── */
+  .ai-code-block pre {
+    margin: 0;
+    padding: 14px 16px;
+    overflow-x: auto;
+    font-family: 'JetBrains Mono', 'Cascadia Code', Consolas, monospace;
+    font-size: 11.5px;
+    line-height: 1.7;
+    color: #e2e8f0;
+    background: transparent;
+    border: none;
+    border-radius: 0;
+    tab-size: 2;
+  }
+  .ai-code-block pre code {
+    background: transparent;
+    border: none;
+    padding: 0;
+    color: inherit;
+    font-size: inherit;
+    border-radius: 0;
+  }
+  /* Token colours */
+  .ai-code-block pre .tok-kw   { color: #f472b6; }
+  .ai-code-block pre .tok-str  { color: #86efac; }
+  .ai-code-block pre .tok-num  { color: #67e8f9; }
+  .ai-code-block pre .tok-cmt  { color: #6b7280; font-style: italic; }
+  .ai-code-block pre .tok-fn   { color: #c4b5fd; }
+  .ai-code-block pre .tok-cls  { color: #fbbf24; }
+  .ai-code-block pre .tok-op   { color: #94a3b8; }
+
+  /* ── Markdown typography inside bubbles ── */
+  .ai-bubble h1,.ai-bubble h2,.ai-bubble h3 {
+    font-weight: 700; margin: 10px 0 4px; line-height: 1.3;
+    color: var(--vscode-text);
+  }
+  .ai-bubble h1 { font-size: 15px; border-bottom: 1px solid rgba(255,255,255,0.08); padding-bottom: 4px; }
+  .ai-bubble h2 { font-size: 13.5px; }
+  .ai-bubble h3 { font-size: 12.5px; color: #a78bfa; }
+  .ai-bubble p  { margin: 4px 0; }
+  .ai-bubble ul, .ai-bubble ol { margin: 6px 0 6px 18px; padding: 0; }
+  .ai-bubble li { margin: 3px 0; }
+  .ai-bubble ul li { list-style: disc; }
+  .ai-bubble ol li { list-style: decimal; }
+  .ai-bubble strong { color: #e2e8f0; font-weight: 700; }
+  .ai-bubble em { color: #c4b5fd; font-style: italic; }
+  .ai-bubble blockquote {
+    margin: 6px 0; padding: 6px 12px;
+    border-left: 3px solid #a78bfa;
+    background: rgba(108,71,255,0.1);
+    border-radius: 0 6px 6px 0;
+    color: rgba(255,255,255,0.7);
+  }
+  .ai-bubble hr {
+    border: none; border-top: 1px solid rgba(255,255,255,0.1);
+    margin: 10px 0;
+  }
+  .ai-bubble a { color: #818cf8; text-decoration: underline; }
+
+  .ai-msg-meta {
+    font-size: 9px; opacity: 0.35; color: var(--vscode-text-dim); padding: 0 4px;
+  }
+  .ai-msg-user .ai-msg-meta { text-align: right; }
+
+  /* Scrollbar for code blocks */
+  .ai-code-block pre::-webkit-scrollbar { height: 4px; }
+  .ai-code-block pre::-webkit-scrollbar-track { background: transparent; }
+  .ai-code-block pre::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.12); border-radius: 2px; }
+
+  /* Streaming cursor */
+  .ai-streaming-cursor::after {
+    content: '▌'; animation: ai-cursor-blink 0.7s step-end infinite; color: #a78bfa;
+  }
+  @keyframes ai-cursor-blink { 0%,100% { opacity: 1; } 50% { opacity: 0; } }
+
+  /* ── Input focus ring ── */
+  #ai-input-wrap:focus-within {
+    border-color: rgba(108,71,255,0.6) !important;
+    box-shadow: 0 0 0 2px rgba(108,71,255,0.15);
+  }
+
+  /* ── Quick prompt hover ── */
+  .ai-quick-prompt:hover {
+    background: rgba(108,71,255,0.12) !important;
+    border-color: rgba(108,71,255,0.4) !important;
+    color: var(--vscode-text) !important;
+  }
+
+  /* ── Model dropdown ── */
+  .ai-model-item {
+    display: flex; align-items: center; gap: 8px;
+    padding: 7px 12px; font-size: 11px; cursor: pointer;
+    transition: background 0.1s; color: var(--vscode-text);
+  }
+  .ai-model-item:hover { background: rgba(255,255,255,0.07); }
+  .ai-model-item.selected { color: #a78bfa; }
+  .ai-model-item .ai-model-provider {
+    font-size: 9px; opacity: 0.5; margin-left: auto;
+  }
+
+  /* ── Scrollbar ── */
+  #ai-chat-history::-webkit-scrollbar { width: 4px; }
+  #ai-chat-history::-webkit-scrollbar-track { background: transparent; }
+  #ai-chat-history::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 2px; }
+</style>
+
+<!-- Pass API keys from server to client safely -->
+<script define:vars={{ OPENROUTER_KEY, NEMOTRON_KEY }}>
+  window.__OR_KEY       = OPENROUTER_KEY;
+  window.__NEMOTRON_KEY = NEMOTRON_KEY;
+</script>
+
+<script>
+  import { store } from '../lib/store';
+
+  // ── Only the two real OpenRouter models wired in .env ───────────────────
+  const MODELS = [
+    {
+      id:       'google/gemma-4-31b-it:free',
+      label:    'Gemma 4 31B',
+      icon:     '✦',
+      provider: 'Google (free)',
+      apiKey:   (window as any).__OR_KEY,
+    },
+    {
+      id:       'nvidia/nemotron-3-nano-30b-a3b:free',
+      label:    'Nemotron Nano',
+      icon:     '🟢',
+      provider: 'NVIDIA (free)',
+      apiKey:   (window as any).__NEMOTRON_KEY,
+    },
+  ];
+
+  // ── State ─────────────────────────────────────────────────────────────────
+  let selectedModel = MODELS[0];
+  let chatHistory: Array<{ role: 'user' | 'assistant'; content: string; ts: string }> = [];
+  let abortController: AbortController | null = null;
+  let isStreaming = false;
+
+  // ── DOM refs ──────────────────────────────────────────────────────────────
+  const panel          = document.getElementById('ai-chat-panel')!;
+  const historyEl      = document.getElementById('ai-chat-history')!;
+  const welcome        = document.getElementById('ai-chat-welcome')!;
+  const typingInd      = document.getElementById('ai-typing-indicator')!;
+  const typingLabel    = document.getElementById('ai-typing-label')!;
+  const chatInput      = document.getElementById('ai-chat-input') as HTMLTextAreaElement;
+  const sendBtn        = document.getElementById('ai-send-btn')!;
+  const sendIcon       = document.getElementById('ai-send-icon')!;
+  const stopIcon       = document.getElementById('ai-stop-icon')!;
+  const modelLabel     = document.getElementById('ai-model-label')!;
+  const modelDropdown  = document.getElementById('ai-model-dropdown')!;
+  const modelList      = document.getElementById('ai-model-list')!;
+  const modelBtn       = document.getElementById('ai-model-selector-btn')!;
+  const includeCode    = document.getElementById('ai-include-code') as HTMLInputElement;
+  const ctxFilePill    = document.getElementById('ai-context-file-pill')!;
+  const ctxFileName    = document.getElementById('ai-context-file-name')!;
+  const apiStatus      = document.getElementById('ai-api-status')!;
+
+  // ── API key & status indicator ────────────────────────────────────────────
+  const OR_KEY: string = (window as any).__OR_KEY || '';
+  if (OR_KEY) {
+    apiStatus.innerHTML = `<span style="color:#4ade80">●</span> <span>Connected</span>`;
+  } else {
+    apiStatus.innerHTML = `<span style="color:#f87171">●</span> <span>No API key</span>`;
+  }
+
+  // ── Build model dropdown list ─────────────────────────────────────────────
+  function buildModelList() {
+    modelList.innerHTML = '';
+    modelLabel.textContent = selectedModel.label;
+    MODELS.forEach(m => {
+      const item = document.createElement('div');
+      item.className = 'ai-model-item' + (m.id === selectedModel.id ? ' selected' : '');
+      item.innerHTML = `
+        <span style="font-size:14px">${m.icon}</span>
+        <span>${m.label}</span>
+        <span class="ai-model-provider">${m.provider}</span>
+        ${m.id === selectedModel.id
+          ? `<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#a78bfa" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>`
+          : ''}
+      `;
+      item.onclick = () => {
+        selectedModel = m;
+        modelLabel.textContent = m.label;
+        modelDropdown.classList.add('hidden');
+        buildModelList();
+      };
+      modelList.appendChild(item);
+    });
+  }
+  buildModelList();
+
+  modelBtn.addEventListener('click', e => {
+    e.stopPropagation();
+    modelDropdown.classList.toggle('hidden');
+  });
+  document.addEventListener('click', () => modelDropdown.classList.add('hidden'));
+
+  // ── Active file context pill ──────────────────────────────────────────────
+  function updateContextPill() {
+    if (store.activeFileId) {
+      const file = store.vfs.find((n: any) => n.id === store.activeFileId);
+      if (file) {
+        ctxFileName.textContent = file.name;
+        ctxFilePill.classList.remove('hidden');
+        ctxFilePill.classList.add('flex');
+        return;
+      }
+    }
+    ctxFilePill.classList.add('hidden');
+    ctxFilePill.classList.remove('flex');
+  }
+  store.on('active-file-changed', updateContextPill);
+  updateContextPill();
+
+  // ── Auto-resize textarea ──────────────────────────────────────────────────
+  chatInput.addEventListener('input', () => {
+    chatInput.style.height = 'auto';
+    chatInput.style.height = Math.min(chatInput.scrollHeight, 120) + 'px';
+  });
+
+  // ── Keyboard shortcut ─────────────────────────────────────────────────────
+  chatInput.addEventListener('keydown', e => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      if (isStreaming) stopStreaming();
+      else sendMessage();
+    }
+  });
+
+  sendBtn.addEventListener('click', () => {
+    if (isStreaming) stopStreaming();
+    else sendMessage();
+  });
+
+  function stopStreaming() {
+    abortController?.abort();
+  }
+
+  function setStreamingState(streaming: boolean) {
+    isStreaming = streaming;
+    if (streaming) {
+      sendIcon.classList.add('hidden');
+      stopIcon.classList.remove('hidden');
+      sendBtn.style.background = 'linear-gradient(135deg,#dc2626,#ef4444)';
+      sendBtn.title = 'Stop (Enter)';
+      typingInd.classList.remove('hidden');
+    } else {
+      sendIcon.classList.remove('hidden');
+      stopIcon.classList.add('hidden');
+      sendBtn.style.background = 'linear-gradient(135deg,#6c47ff,#a855f7)';
+      sendBtn.title = 'Send (Enter)';
+      typingInd.classList.add('hidden');
+    }
+    sendBtn.style.opacity = '1';
+  }
+
+  // ── Quick prompts ─────────────────────────────────────────────────────────
+  document.querySelectorAll('.ai-quick-prompt').forEach(btn => {
+    btn.addEventListener('click', () => {
+      chatInput.value = btn.getAttribute('data-prompt') || '';
+      chatInput.dispatchEvent(new Event('input'));
+      sendMessage();
+    });
+  });
+
+  // ── New chat ──────────────────────────────────────────────────────────────
+  document.getElementById('ai-new-chat')?.addEventListener('click', () => {
+    stopStreaming();
+    chatHistory = [];
+    renderMessages();
+  });
+
+  // ── Close ─────────────────────────────────────────────────────────────────
+  document.getElementById('ai-chat-close')?.addEventListener('click', () => {
+    panel.classList.remove('ai-chat-open');
+    document.querySelector('.activity-btn[data-activity="ai"]')?.classList.remove('active-activity');
+    if (store.editorInstance) store.editorInstance.layout();
+  });
+
+  // ── Helpers ───────────────────────────────────────────────────────────────
+  function timestamp() {
+    return new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  }
+  function escapeHtml(str: string) {
+    return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+  function markdownToHtml(text: string): string {
+    // ── Protect fenced code blocks first ─────────────────────────────────
+    const codeBlocks: string[] = [];
+    text = text.replace(/```([\w+#.-]*)\r?\n?([\s\S]*?)```/g, (_m, rawLang, code) => {
+      const lang    = rawLang.trim() || 'code';
+      const escaped = escapeHtml(code.trim());
+      const coloured = syntaxColour(escaped, lang);
+      const id = `cb-${codeBlocks.length}`;
+      codeBlocks.push(
+        `<div class="ai-code-block" id="${id}">
+          <div class="ai-code-header">
+            <span class="ai-code-lang-badge">${lang}</span>
+            <button class="ai-copy-btn" data-target="${id}" onclick="aiCopyCode(this)">
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+              </svg>
+              Copy
+            </button>
+          </div>
+          <pre><code>${coloured}</code></pre>
+        </div>`
+      );
+      return `\x00CODE${codeBlocks.length - 1}\x00`;
+    });
+
+    // ── Block-level elements ──────────────────────────────────────────────
+    const lines = text.split('\n');
+    const out: string[] = [];
+    let inUl = false, inOl = false;
+
+    const flushLists = () => {
+      if (inUl) { out.push('</ul>'); inUl = false; }
+      if (inOl) { out.push('</ol>'); inOl = false; }
+    };
+
+    for (const raw of lines) {
+      const line = raw;
+
+      // Code block placeholder
+      if (/^\x00CODE(\d+)\x00$/.test(line)) {
+        flushLists();
+        const idx = parseInt(line.match(/\d+/)![0]);
+        out.push(codeBlocks[idx]);
+        continue;
+      }
+
+      // Headings
+      const h3 = line.match(/^###\s+(.+)/);
+      const h2 = line.match(/^##\s+(.+)/);
+      const h1 = line.match(/^#\s+(.+)/);
+      if (h1) { flushLists(); out.push(`<h1>${inlineFormat(h1[1])}</h1>`); continue; }
+      if (h2) { flushLists(); out.push(`<h2>${inlineFormat(h2[1])}</h2>`); continue; }
+      if (h3) { flushLists(); out.push(`<h3>${inlineFormat(h3[1])}</h3>`); continue; }
+
+      // Blockquote
+      const bq = line.match(/^>\s?(.*)/);
+      if (bq) { flushLists(); out.push(`<blockquote>${inlineFormat(bq[1])}</blockquote>`); continue; }
+
+      // Horizontal rule
+      if (/^(-{3,}|\*{3,}|_{3,})$/.test(line.trim())) { flushLists(); out.push('<hr>'); continue; }
+
+      // Unordered list
+      const ul = line.match(/^[\*\-]\s+(.+)/);
+      if (ul) {
+        if (inOl) { out.push('</ol>'); inOl = false; }
+        if (!inUl) { out.push('<ul>'); inUl = true; }
+        out.push(`<li>${inlineFormat(ul[1])}</li>`);
+        continue;
+      }
+
+      // Ordered list
+      const ol = line.match(/^\d+\.\s+(.+)/);
+      if (ol) {
+        if (inUl) { out.push('</ul>'); inUl = false; }
+        if (!inOl) { out.push('<ol>'); inOl = true; }
+        out.push(`<li>${inlineFormat(ol[1])}</li>`);
+        continue;
+      }
+
+      flushLists();
+
+      // Empty line → paragraph break
+      if (line.trim() === '') { out.push('<br>'); continue; }
+
+      out.push(`<p>${inlineFormat(line)}</p>`);
+    }
+    flushLists();
+    return out.join('');
+  }
+
+  // ── Inline formatting ─────────────────────────────────────────────────────
+  function inlineFormat(s: string): string {
+    s = s.replace(/`([^`]+)`/g, '<code>$1</code>');
+    s = s.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+    s = s.replace(/\*([^*]+)\*/g, '<em>$1</em>');
+    s = s.replace(/~~([^~]+)~~/g, '<del>$1</del>');
+    s = s.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>');
+    return s;
+  }
+
+  // ── Lightweight syntax colouring (regex-based) ────────────────────────────
+  function syntaxColour(html: string, lang: string): string {
+    const jsLangs = ['js','javascript','ts','typescript','jsx','tsx','json','node'];
+    if (!jsLangs.includes(lang.toLowerCase())) return html;
+
+    // Order matters: strings first, then comments, then keywords
+    // Strings
+    html = html.replace(/(&#39;[^&#]*&#39;|&quot;[^&]*&quot;|`[^`]*`)/g,
+      '<span class="tok-str">$1</span>');
+    // Single-line comments
+    html = html.replace(/(&#47;&#47;[^\n]*)/g,
+      '<span class="tok-cmt">$1</span>');
+    // Keywords
+    const kws = 'const|let|var|function|return|if|else|for|while|do|switch|case|break|continue|class|extends|import|export|default|from|new|this|typeof|instanceof|async|await|try|catch|finally|throw|void|null|undefined|true|false|of|in|static|get|set|super|yield|delete';
+    html = html.replace(
+      new RegExp(`(?<![\\w$])(?:${kws})(?![\\w$])`, 'g'),
+      '<span class="tok-kw">$&</span>'
+    );
+    // Numbers
+    html = html.replace(/(?<![\w$])(\d+(?:\.\d+)?(?:[eE][+-]?\d+)?n?)(?![\w$])/g,
+      '<span class="tok-num">$1</span>');
+    // Function names
+    html = html.replace(/([a-zA-Z_$][\w$]*)(?=\s*\()/g,
+      '<span class="tok-fn">$1</span>');
+    return html;
+  }
+
+  // ── Message rendering ─────────────────────────────────────────────────────
+  function renderMessages() {
+    historyEl.querySelectorAll('.ai-msg').forEach(el => el.remove());
+    if (chatHistory.length === 0) {
+      welcome.style.display = '';
+      return;
+    }
+    welcome.style.display = 'none';
+    chatHistory.forEach(msg => appendBubble(msg.role, msg.content, msg.ts, false));
+    historyEl.scrollTop = historyEl.scrollHeight;
+  }
+
+  function appendBubble(
+    role: 'user' | 'assistant',
+    content: string,
+    ts: string,
+    animate = true,
+    streaming = false
+  ): HTMLElement {
+    welcome.style.display = 'none';
+
+    const wrapper = document.createElement('div');
+    wrapper.className = `ai-msg ai-msg-${role}`;
+    if (!animate) wrapper.style.animation = 'none';
+
+    const bubble = document.createElement('div');
+    bubble.className = 'ai-bubble' + (streaming ? ' ai-streaming-cursor' : '');
+    bubble.innerHTML = role === 'assistant' ? markdownToHtml(content) : escapeHtml(content);
+
+    const meta = document.createElement('div');
+    meta.className = 'ai-msg-meta';
+    meta.textContent = role === 'user' ? `You · ${ts}` : `${selectedModel.label} · ${ts}`;
+
+    wrapper.appendChild(bubble);
+    wrapper.appendChild(meta);
+    historyEl.appendChild(wrapper);
+    historyEl.scrollTop = historyEl.scrollHeight;
+    return bubble;
+  }
+
+  // ── Send message ──────────────────────────────────────────────────────────
+  async function sendMessage() {
+    const text = chatInput.value.trim();
+    if (!text || isStreaming) return;
+
+    chatInput.value = '';
+    chatInput.style.height = 'auto';
+
+    const ts = timestamp();
+    chatHistory.push({ role: 'user', content: text, ts });
+    appendBubble('user', text, ts);
+
+    setStreamingState(true);
+    typingLabel.textContent = 'Thinking…';
+    historyEl.scrollTop = historyEl.scrollHeight;
+
+    // Build system prompt with optional code context
+    let system = `You are an expert JavaScript/TypeScript coding assistant embedded in a VS Code-style online compiler. Be concise and helpful. Format code with markdown fenced code blocks.`;
+    if (includeCode.checked && (store as any).editorInstance) {
+      const code = (store as any).editorInstance.getValue();
+      const fileName = store.activeFileId
+        ? (store.vfs.find((n: any) => n.id === store.activeFileId)?.name ?? 'untitled.js')
+        : 'untitled.js';
+      if (code.trim()) {
+        system += `\n\nCurrent editor file (${fileName}):\n\`\`\`javascript\n${code}\n\`\`\``;
+      }
+    }
+
+    // OpenRouter messages
+    const messages = [
+      { role: 'system', content: system },
+      ...chatHistory.slice(0, -1).map(m => ({ role: m.role, content: m.content })),
+      { role: 'user', content: text }
+    ];
+
+    try {
+      const activeKey = selectedModel.apiKey || OR_KEY;
+
+      if (!activeKey) {
+        throw new Error('No OpenRouter API key found. Add PUBLIC_OPENROUTER_API_KEY to your .env file.');
+      }
+
+
+      abortController = new AbortController();
+      typingLabel.textContent = 'Generating…';
+
+      const aiTs   = timestamp();
+      let fullText = '';
+      const bubble = appendBubble('assistant', '', aiTs, true, true);
+
+      const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+        method: 'POST',
+        signal: abortController.signal,
+        headers: {
+          'Content-Type':   'application/json',
+          'Authorization':  `Bearer ${activeKey}`,
+          'HTTP-Referer':   window.location.origin,
+          'X-Title':        'VSCompiler AI Chat',
+        },
+        body: JSON.stringify({
+          model:  selectedModel.id,
+          messages,
+          stream: true,
+          temperature:       0.7,
+          max_tokens:        2048,
+        }),
+      });
+
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error((err as any)?.error?.message ?? `OpenRouter error ${res.status}`);
+      }
+
+      // ── SSE stream ──────────────────────────────────────────────────────
+      const reader  = res.body!.getReader();
+      const decoder = new TextDecoder();
+
+      while (true) {
+        const { value, done } = await reader.read();
+        if (done) break;
+
+        const chunk = decoder.decode(value, { stream: true });
+        const lines = chunk.split('\n');
+
+        for (const line of lines) {
+          if (!line.startsWith('data: ')) continue;
+          const data = line.slice(6).trim();
+          if (data === '[DONE]') break;
+          try {
+            const json  = JSON.parse(data);
+            const delta = json.choices?.[0]?.delta?.content;
+            if (delta) {
+              fullText += delta;
+              bubble.innerHTML = markdownToHtml(fullText);
+              bubble.classList.add('ai-streaming-cursor');
+              historyEl.scrollTop = historyEl.scrollHeight;
+            }
+          } catch { /* partial chunk — skip */ }
+        }
+      }
+
+      // Finalize
+      bubble.classList.remove('ai-streaming-cursor');
+      bubble.innerHTML = markdownToHtml(fullText || '(empty response)');
+      chatHistory.push({ role: 'assistant', content: fullText, ts: aiTs });
+
+    } catch (err: any) {
+      if (err?.name === 'AbortError') {
+        // User stopped — mark last bubble as stopped
+        const lastBubble = historyEl.querySelector('.ai-msg-assistant:last-child .ai-bubble');
+        if (lastBubble) lastBubble.classList.remove('ai-streaming-cursor');
+        const existing = (lastBubble as HTMLElement)?.innerHTML || '';
+        chatHistory.push({ role: 'assistant', content: '(stopped)', ts: timestamp() });
+      } else {
+        const errTs  = timestamp();
+        const errMsg = `⚠️ ${err?.message || 'Could not reach OpenRouter. Please try again.'}`;
+        chatHistory.push({ role: 'assistant', content: errMsg, ts: errTs });
+        appendBubble('assistant', errMsg, errTs);
+      }
+    } finally {
+      setStreamingState(false);
+      abortController = null;
+      chatInput.focus();
+    }
+  }
+
+  // ── Open / close (called from Compiler.astro activity bar) ───────────────
+  (window as any).openAIChat = () => {
+    panel.classList.add('ai-chat-open');
+    setTimeout(() => chatInput.focus(), 300);
+    if ((store as any).editorInstance) (store as any).editorInstance.layout();
+  };
+  (window as any).closeAIChat = () => {
+    panel.classList.remove('ai-chat-open');
+    if ((store as any).editorInstance) (store as any).editorInstance.layout();
+  };
+  (window as any).isAIChatOpen = () => panel.classList.contains('ai-chat-open');
+
+  // ── Copy code helper (called from inline onclick in code blocks) ──────────
+  (window as any).aiCopyCode = (btn: HTMLButtonElement) => {
+    const blockId = btn.getAttribute('data-target');
+    const block   = document.getElementById(blockId!);
+    const code    = block?.querySelector('pre code')?.textContent ?? '';
+    navigator.clipboard.writeText(code).then(() => {
+      btn.classList.add('copied');
+      const prev = btn.innerHTML;
+      btn.innerHTML = `<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> Copied!`;
+      setTimeout(() => {
+        btn.innerHTML = prev;
+        btn.classList.remove('copied');
+      }, 2000);
+    });
+  };
+</script>

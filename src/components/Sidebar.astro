@@ -81,6 +81,10 @@
 </aside>
 
 <script>
+  import { store, type VfsNode } from '../lib/store';
+  import { getFileIcon, saveVFS, openFile, deleteNode, showToast, getTargetParentId } from '../lib/vfs';
+  import { renderHistory } from '../lib/console';
+
   // Sidebar tab switching (triggered by activity bar)
   const tabs = document.querySelectorAll('.sidebar-tab-btn');
   const panels = document.querySelectorAll('.sidebar-panel');
@@ -95,4 +99,239 @@
       if (sectionName) sectionName.textContent = (target || '').toUpperCase();
     });
   });
+
+  document.getElementById('btn-new-file')?.addEventListener('click', () => {
+    store.setCreatingItem({ type: 'file', parentId: getTargetParentId() });
+  });
+  
+  document.getElementById('btn-new-folder')?.addEventListener('click', () => {
+    store.setCreatingItem({ type: 'folder', parentId: getTargetParentId() });
+  });
+
+  function renderVFS() {
+    const tree = document.getElementById('vfs-tree');
+    if (!tree) return;
+    tree.innerHTML = '';
+    
+    tree.onclick = () => {
+      store.setActiveFolderId(null);
+      if (store.renamingItemId) store.setRenamingItemId(null);
+    };
+
+    const rootNodes = store.vfs.filter((n: VfsNode) => n.parentId === null);
+    
+    const renderNode = (node: VfsNode, level: number, container: HTMLElement) => {
+      const el = document.createElement('div');
+      el.className = 'flex items-center gap-1.5 px-2 py-[5px] cursor-pointer select-none transition-colors hover:bg-white/5 group relative';
+      el.style.paddingLeft = `${level * 12 + 8}px`;
+      if (node.id === store.activeFileId || node.id === store.activeFolderId) {
+        el.style.background = 'rgba(255,255,255,0.1)';
+      }
+      
+      const icon = document.createElement('span');
+      icon.className = 'flex items-center justify-center shrink-0 w-[14px] h-[14px]';
+      icon.innerHTML = getFileIcon(node.name, node.type);
+      
+      el.appendChild(icon);
+      
+      if (store.renamingItemId === node.id) {
+        const input = document.createElement('input');
+        input.type = 'text';
+        input.className = 'flex-1 bg-transparent border border-[#007acc] text-[13px] outline-none text-white px-1';
+        input.value = node.name;
+        
+        input.addEventListener('input', () => {
+          icon.innerHTML = getFileIcon(input.value.trim(), node.type);
+        });
+        
+        let committed = false;
+        const commit = () => {
+          if (committed) return;
+          committed = true;
+          const newName = input.value.trim();
+          if (newName && newName !== node.name) {
+            if (store.vfs.some((n: VfsNode) => n.name === newName && n.parentId === node.parentId && n.id !== node.id)) {
+              showToast(`A ${node.type} named "${newName}" already exists in this folder.`, true);
+              store.setRenamingItemId(null);
+              return;
+            }
+            node.name = newName;
+            saveVFS();
+            if (store.activeFileId === node.id) {
+              const label = document.getElementById('editor-title-label');
+              if (label) label.textContent = newName;
+            }
+          }
+          store.setRenamingItemId(null);
+        };
+        
+        input.onkeydown = (e) => {
+          if (e.key === 'Enter') commit();
+          if (e.key === 'Escape') { store.setRenamingItemId(null); }
+        };
+        input.onblur = commit;
+        
+        el.appendChild(input);
+        setTimeout(() => {
+          input.focus();
+          const dotIdx = input.value.lastIndexOf('.');
+          if (dotIdx > 0) input.setSelectionRange(0, dotIdx);
+          else input.select();
+        }, 0);
+      } else {
+        const label = document.createElement('span');
+        label.className = 'text-[13px] truncate flex-1';
+        label.style.color = 'var(--vscode-text)';
+        label.textContent = node.name;
+        el.appendChild(label);
+      }
+      
+      const actions = document.createElement('div');
+      actions.className = 'hidden group-hover:flex items-center gap-1 absolute right-2 bg-[var(--vscode-sidebar)] px-1';
+      
+      if (store.renamingItemId !== node.id) {
+        const renameBtn = document.createElement('button');
+        renameBtn.className = 'w-[18px] h-[18px] flex items-center justify-center rounded border-none cursor-pointer hover:bg-white/10';
+        renameBtn.style.color = 'var(--vscode-text-dim)';
+        renameBtn.style.background = 'transparent';
+        renameBtn.title = "Rename";
+        renameBtn.innerHTML = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>`;
+        renameBtn.onclick = (e) => {
+          e.stopPropagation();
+          store.setRenamingItemId(node.id);
+        };
+        actions.appendChild(renameBtn);
+      }
+      
+      const delBtn = document.createElement('button');
+      delBtn.className = 'w-[18px] h-[18px] flex items-center justify-center rounded border-none cursor-pointer hover:bg-red-500/80';
+      delBtn.style.color = 'var(--vscode-text-dim)';
+      delBtn.style.background = 'transparent';
+      delBtn.title = "Delete";
+      delBtn.innerHTML = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>`;
+      delBtn.onclick = (e) => {
+        e.stopPropagation();
+        deleteNode(node.id);
+      };
+      
+      if (store.renamingItemId !== node.id) actions.appendChild(delBtn);
+      
+      if (store.renamingItemId !== node.id) el.appendChild(actions);
+      
+      el.onclick = (e) => {
+        e.stopPropagation();
+        if (store.renamingItemId === node.id) return;
+        if (node.type === 'file') {
+          store.setActiveFolderId(null);
+          openFile(node.id);
+        } else {
+          store.setActiveFolderId(store.activeFolderId === node.id ? null : node.id);
+        }
+      };
+      
+      container.appendChild(el);
+      
+      if (node.type === 'folder') {
+        if (store.creatingItem && store.creatingItem.parentId === node.id) {
+          renderInlineInput(store.creatingItem.type, store.creatingItem.parentId, container, level + 1);
+        }
+        const children = store.vfs.filter((n: VfsNode) => n.parentId === node.id);
+        children.forEach(child => renderNode(child, level + 1, container));
+      }
+    };
+    
+    rootNodes.sort((a, b) => {
+      if (a.type === b.type) return a.name.localeCompare(b.name);
+      return a.type === 'folder' ? -1 : 1;
+    });
+    
+    rootNodes.forEach(node => renderNode(node, 0, tree));
+    
+    if (store.creatingItem && store.creatingItem.parentId === null) {
+      renderInlineInput(store.creatingItem.type, null, tree, 0);
+    }
+  }
+  
+  function renderInlineInput(type: 'file' | 'folder', parentId: string | null, container: HTMLElement, explicitLevel: number = 0) {
+    let parentLevel = explicitLevel;
+
+    const wrapper = document.createElement('div');
+    wrapper.className = 'flex items-center gap-1.5 px-2 py-[5px]';
+    wrapper.style.paddingLeft = `${parentLevel * 12 + 8}px`;
+    
+    const icon = document.createElement('span');
+    icon.className = 'flex items-center justify-center shrink-0 w-[14px] h-[14px]';
+    icon.innerHTML = getFileIcon('', type);
+    
+    const input = document.createElement('input');
+    input.type = 'text';
+    input.className = 'flex-1 bg-transparent border border-[#007acc] text-[13px] outline-none text-white px-1';
+    input.placeholder = type === 'folder' ? 'Folder name' : 'File name';
+    
+    input.addEventListener('input', () => {
+      icon.innerHTML = getFileIcon(input.value.trim(), type);
+    });
+
+    wrapper.appendChild(icon);
+    wrapper.appendChild(input);
+    
+    container.appendChild(wrapper);
+    input.focus();
+    
+    let committed = false;
+    const commit = () => {
+      if (committed) return;
+      committed = true;
+      const name = input.value.trim();
+      if (name) {
+        if (store.vfs.some((n: VfsNode) => n.name === name && n.parentId === parentId)) {
+          showToast(`A ${type} named "${name}" already exists in this folder.`, true);
+          store.setCreatingItem(null);
+          return;
+        }
+        if (type === 'file') {
+          const newFile: VfsNode = {
+            id: 'f-' + Date.now(),
+            name,
+            type: 'file',
+            content: '// ' + name + '\n',
+            parentId
+          };
+          store.vfs.push(newFile);
+          saveVFS();
+          store.setCreatingItem(null);
+          openFile(newFile.id);
+        } else {
+          const newFolder: VfsNode = {
+            id: 'd-' + Date.now(),
+            name,
+            type: 'folder',
+            parentId
+          };
+          store.vfs.push(newFolder);
+          store.setActiveFolderId(newFolder.id);
+          store.setCreatingItem(null);
+          saveVFS();
+        }
+      } else {
+        store.setCreatingItem(null);
+      }
+    };
+    
+    input.onkeydown = (e) => {
+      if (e.key === 'Enter') commit();
+      if (e.key === 'Escape') {
+        store.setCreatingItem(null);
+      }
+    };
+    
+    input.onblur = commit;
+  }
+
+  // Subscribe to store events
+  store.on('vfs-changed', renderVFS);
+  store.on('active-file-changed', renderVFS);
+
+  // Initial render when the script loads, though `initVFS` will be called from Compiler
+  renderVFS();
 </script>

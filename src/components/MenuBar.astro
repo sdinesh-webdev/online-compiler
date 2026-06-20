@@ -1,0 +1,194 @@
+---
+// MenuBar.astro
+---
+
+<div class="flex items-center h-[var(--header-height)] shrink-0" style="background:var(--vscode-titlebar); border-bottom:1px solid var(--vscode-border);">
+  <!-- App logo + name -->
+  <div class="flex items-center gap-2 px-3 shrink-0">
+    <div class="w-[18px] h-[18px] rounded-sm flex items-center justify-center font-black text-[10px] text-white" style="background:linear-gradient(135deg,#007acc,#2a2d2e)">VS</div>
+    <span class="text-[12px] font-semibold" style="color:var(--vscode-text)">VSCompiler</span>
+  </div>
+
+  <!-- Menu bar -->
+  <nav class="flex items-center h-full ml-2 relative" id="app-menu-bar">
+    {Object.entries({
+      'File': [{label: 'New File', action: 'new-file'}, {label: 'Save', action: 'save'}],
+      'Edit': [{label: 'Cut (Ctrl+X)', action: 'cut'}, {label: 'Copy (Ctrl+C)', action: 'copy'}, {label: 'Paste (Ctrl+V)', action: 'paste'}, {label: 'Format Document', action: 'format'}],
+      'View': [{label: 'Toggle Sidebar', action: 'toggle-sidebar'}, {label: 'Toggle Console', action: 'toggle-console'}],
+      'Run': [{label: 'Run Code (Ctrl+Enter)', action: 'run'}],
+      'Terminal': [{label: 'Clear Terminal', action: 'clear-terminal'}],
+      'Help': [{label: 'About VSCompiler', action: 'about'}]
+    }).map(([menuName, items]) => (
+      <div class="relative h-full menu-item-container">
+        <button class="menu-btn px-[10px] h-full text-[12px] border-none bg-transparent cursor-pointer transition-colors hover:bg-white/10" style="color:var(--vscode-text-dim)">{menuName}</button>
+        <div class="menu-dropdown hidden absolute top-full left-0 py-1 rounded shadow-lg min-w-[180px] z-[9999]" style="background:#252526; border:1px solid var(--vscode-border);">
+          {items.map(item => (
+            <div class="menu-action flex items-center px-4 py-1.5 text-[12px] cursor-pointer hover:bg-[#04395e]" style="color:var(--vscode-text)" data-action={item.action}>
+              {item.label}
+            </div>
+          ))}
+        </div>
+      </div>
+    ))}
+  </nav>
+
+  <!-- Spacer -->
+  <div class="flex-1" />
+
+  <!-- Action buttons (right of titlebar) -->
+  <div class="flex items-center gap-1.5 px-3">
+    <!-- Run -->
+    <button id="btn-run" title="Run Code (Ctrl+Enter)"
+      class="flex items-center gap-1.5 text-[12px] font-semibold px-3 py-1 rounded cursor-pointer border-none transition-all hover:brightness-110"
+      style="background:var(--vscode-accent);color:#fff;">
+      <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+      Run
+    </button>
+    <!-- Format -->
+    <button id="btn-format" title="Format Code"
+      class="flex items-center gap-1 text-[12px] px-2.5 py-1 rounded cursor-pointer border-none transition-all hover:bg-white/10"
+      style="color:var(--vscode-text-dim);background:transparent;">
+      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
+      Format
+    </button>
+    <!-- Share -->
+    <button id="btn-share" title="Copy share URL"
+      class="flex items-center gap-1 text-[12px] px-2.5 py-1 rounded cursor-pointer border-none transition-all hover:bg-white/10"
+      style="color:var(--vscode-text-dim);background:transparent;">
+      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8M16 6l-4-4-4 4M12 2v13"/></svg>
+      Share
+    </button>
+    <!-- Import -->
+    <button id="btn-import" title="Import .js file"
+      class="flex items-center justify-center w-[26px] h-[26px] rounded cursor-pointer border-none transition-all hover:bg-white/10"
+      style="color:var(--vscode-text-dim);background:transparent;">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12"/></svg>
+    </button>
+    <input type="file" id="import-file-input" class="hidden" accept=".js,.ts,.txt" />
+    <!-- Export -->
+    <button id="btn-export" title="Download script.js"
+      class="flex items-center justify-center w-[26px] h-[26px] rounded cursor-pointer border-none transition-all hover:bg-white/10"
+      style="color:var(--vscode-text-dim);background:transparent;">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+    </button>
+  </div>
+</div>
+
+<script>
+  import { store } from '../lib/store';
+  import { saveVFS, showToast } from '../lib/vfs';
+  import { executeJS } from '../lib/engine';
+
+  let openMenu: HTMLElement | null = null;
+  document.querySelectorAll('.menu-btn').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const container = btn.closest('.menu-item-container');
+      const dropdown = container?.querySelector('.menu-dropdown') as HTMLElement;
+      if (openMenu && openMenu !== dropdown) openMenu.classList.add('hidden');
+      if (dropdown) {
+        dropdown.classList.toggle('hidden');
+        openMenu = dropdown.classList.contains('hidden') ? null : dropdown;
+      }
+    });
+  });
+
+  document.addEventListener('click', () => {
+    if (openMenu) { openMenu.classList.add('hidden'); openMenu = null; }
+  });
+
+  document.querySelectorAll('.menu-action').forEach(action => {
+    action.addEventListener('click', (e) => {
+      const type = (e.currentTarget as HTMLElement).dataset.action;
+      if (type === 'new-file') {
+        const btn = document.getElementById('btn-new-file');
+        if (btn) btn.click();
+      } else if (type === 'save') {
+        if (store.activeFileId) {
+           const file = store.vfs.find((n: any) => n.id === store.activeFileId);
+           if (file && store.editorInstance) {
+             file.content = store.editorInstance.getValue();
+             saveVFS();
+             showToast('✓ Saved ' + file.name);
+           }
+        }
+      } else if (type === 'cut') {
+        if (store.editorInstance) { store.editorInstance.focus(); document.execCommand('cut'); }
+      } else if (type === 'copy') {
+        if (store.editorInstance) { store.editorInstance.focus(); document.execCommand('copy'); }
+      } else if (type === 'paste') {
+        if (store.editorInstance) { store.editorInstance.focus(); navigator.clipboard.readText().then(text => { store.editorInstance.trigger('keyboard', 'type', {text}); }); }
+      } else if (type === 'format') {
+        const btn = document.getElementById('btn-format');
+        if (btn) btn.click();
+      } else if (type === 'toggle-sidebar') {
+        const sidebar = document.getElementById('app-sidebar');
+        if (sidebar) sidebar.style.display = sidebar.style.display === 'none' ? 'flex' : 'none';
+      } else if (type === 'toggle-console') {
+        const consoleEl = document.getElementById('app-console');
+        if (consoleEl) consoleEl.style.display = consoleEl.style.display === 'none' ? 'flex' : 'none';
+      } else if (type === 'run') {
+        executeJS();
+      } else if (type === 'clear-terminal') {
+        const btn = document.getElementById('btn-clear-console');
+        if (btn) btn.click();
+      } else if (type === 'about') {
+        alert('VSCompiler JS Compiler\nPremium Online JavaScript Sandbox\nVersion 1.0.0');
+      }
+    });
+  });
+
+  // Wire up buttons
+  document.getElementById('btn-run')?.addEventListener('click', executeJS);
+  
+  document.getElementById('btn-format')?.addEventListener('click', () => {
+    if (!store.editorInstance) return;
+    try {
+      const code = store.editorInstance.getValue();
+      // @ts-ignore
+      const formatted = prettier.format(code, {
+        parser: 'babel', // @ts-ignore
+        plugins: prettierPlugins,
+        tabWidth: parseInt((document.getElementById('setting-tabsize') as HTMLSelectElement)?.value || '2'),
+        semi: true, singleQuote: true
+      });
+      store.editorInstance.setValue(formatted);
+      showToast('✓ Code formatted');
+    } catch { showToast('❌ Syntax error — cannot format'); }
+  });
+
+  document.getElementById('btn-share')?.addEventListener('click', () => {
+    if (!store.editorInstance) return;
+    const b64 = btoa(unescape(encodeURIComponent(store.editorInstance.getValue())));
+    navigator.clipboard.writeText(`${location.origin}${location.pathname}#code=${b64}`)
+      .then(() => showToast('✓ Share link copied!'))
+      .catch(() => showToast('❌ Failed to copy'));
+  });
+
+  const importFileInput = document.getElementById('import-file-input') as HTMLInputElement;
+  document.getElementById('btn-import')?.addEventListener('click', () => importFileInput?.click());
+  importFileInput?.addEventListener('change', e => {
+    const file = (e.target as HTMLInputElement).files?.[0];
+    if (!file || !store.editorInstance) return;
+    const reader = new FileReader();
+    reader.onload = evt => {
+      store.editorInstance.setValue(evt.target?.result as string);
+      const label = document.getElementById('editor-title-label');
+      if (label) label.textContent = file.name;
+      showToast('✓ File imported');
+    };
+    reader.readAsText(file);
+  });
+
+  document.getElementById('btn-export')?.addEventListener('click', () => {
+    if (!store.editorInstance) return;
+    const blob = new Blob([store.editorInstance.getValue()], { type: 'application/javascript' });
+    const a = Object.assign(document.createElement('a'), {
+      href: URL.createObjectURL(blob),
+      download: document.getElementById('editor-title-label')?.textContent || 'script.js'
+    });
+    a.click();
+    URL.revokeObjectURL(a.href);
+    showToast('✓ Download started');
+  });
+</script>
