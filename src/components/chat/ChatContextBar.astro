@@ -1,0 +1,31 @@
+---
+// ChatContextBar.astro
+---
+
+<!-- ── Context pills ── -->
+<div id="ai-context-bar"
+  class="flex items-center gap-1.5 px-3.5 py-1.5 shrink-0 flex-wrap"
+  style="border-bottom:1px solid #2c2f42;min-height:32px;">
+  <span id="ai-context-file-pill"
+    class="hidden items-center gap-1 text-[10px] px-2 py-0.5 rounded-full font-medium"
+    style="background:rgba(157,124,242,0.18);color:#9d7cf2;border:1px solid rgba(157,124,242,0.3);">
+    <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+      <polyline points="14 2 14 8 20 8"/>
+    </svg>
+    <span id="ai-context-file-name">untitled.js</span>
+  </span>
+  <span id="ai-api-status" class="flex items-center gap-1 text-[10px] ml-auto"
+    style="color:#6b7394;">
+  </span>
+</div>
+
+<!-- ── Mode tabs ── -->
+<div class="flex gap-1 border-b px-3.5 py-2" style="border-bottom:1px solid #2c2f42;">
+  <button class="ai-mode-tab rounded-md px-2.5 py-1 text-[11.5px] font-medium transition-colors"
+    data-mode="Agent" style="background:#1f2335;color:#7dcfff;">Agent</button>
+  <button class="ai-mode-tab rounded-md px-2.5 py-1 text-[11.5px] font-medium transition-colors"
+    data-mode="Plan" style="background:transparent;color:#6b7394;">Plan</button>
+  <button class="ai-mode-tab rounded-md px-2.5 py-1 text-[11.5px] font-medium transition-colors"
+    data-mode="Fast" style="background:transparent;color:#6b7394;">Fast</button>
+</div>

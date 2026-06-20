@@ -1,0 +1,41 @@
+---
+// ChatWelcome.astro
+---
+
+<!-- Welcome state -->
+<div id="ai-chat-welcome" class="flex flex-col items-center justify-center h-full gap-4 py-8">
+  <div class="ai-welcome-icon flex items-center justify-center w-12 h-12 rounded-2xl"
+    style="background:linear-gradient(135deg,rgba(157,124,242,0.25) 0%,rgba(125,207,255,0.25) 100%);border:1px solid rgba(157,124,242,0.4);">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#9d7cf2" stroke-width="1.8">
+      <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
+    </svg>
+  </div>
+  <div class="text-center">
+    <p class="text-[13px] font-semibold mb-1" style="color:#c0caf5;">AI Code Assistant</p>
+    <p class="text-[11px] leading-relaxed opacity-60" style="color:#6b7394;">
+      Powered by OpenRouter · Ask about your code,<br>get explanations, fix bugs or generate snippets.
+    </p>
+  </div>
+  <div class="flex flex-col gap-2 w-full mt-1">
+    <button class="ai-quick-prompt text-left px-3 py-2 rounded-lg text-[11px] transition-all cursor-pointer border"
+      data-prompt="Explain what this code does step by step"
+      style="background:rgba(255,255,255,0.03);border-color:#2c2f42;color:#6b7394;">
+      💡 Explain this code
+    </button>
+    <button class="ai-quick-prompt text-left px-3 py-2 rounded-lg text-[11px] transition-all cursor-pointer border"
+      data-prompt="Find and fix any bugs or errors in this code"
+      style="background:rgba(255,255,255,0.03);border-color:#2c2f42;color:#6b7394;">
+      🐛 Fix bugs
+    </button>
+    <button class="ai-quick-prompt text-left px-3 py-2 rounded-lg text-[11px] transition-all cursor-pointer border"
+      data-prompt="Refactor this code to be cleaner and more efficient"
+      style="background:rgba(255,255,255,0.03);border-color:#2c2f42;color:#6b7394;">
+      ✨ Refactor code
+    </button>
+    <button class="ai-quick-prompt text-left px-3 py-2 rounded-lg text-[11px] transition-all cursor-pointer border"
+      data-prompt="Add complete JSDoc comments to document this code"
+      style="background:rgba(255,255,255,0.03);border-color:#2c2f42;color:#6b7394;">
+      📝 Add documentation
+    </button>
+  </div>
+</div>

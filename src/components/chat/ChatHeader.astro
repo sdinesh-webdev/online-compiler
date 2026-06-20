@@ -1,0 +1,38 @@
+---
+// ChatHeader.astro
+---
+
+<div class="ai-chat-header flex items-center justify-between px-3.5 py-3 shrink-0"
+  style="border-bottom:1px solid #2c2f42;background:#14151c;">
+  <div class="flex items-center gap-2">
+    <div class="ai-logo-wrap flex items-center justify-center w-6 h-6 rounded-md"
+      style="background:linear-gradient(135deg,#9d7cf2 0%,#7dcfff 100%);">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5">
+        <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
+      </svg>
+    </div>
+    <span class="text-[13px] font-semibold" style="color:#c0caf5;">AI Assistant</span>
+    <!-- Status dot -->
+    <span id="ai-status-dot" class="relative flex h-2 w-2">
+      <span class="absolute inline-flex h-full w-full animate-ping rounded-full opacity-60 hidden" style="background:#e0af68;" id="ai-thinking-dot"></span>
+      <span class="relative inline-flex h-2 w-2 rounded-full" style="background:#9ece6a;" id="ai-idle-dot"></span>
+    </span>
+    <span class="text-[11px]" style="color:#4b5066;" id="ai-status-label">Idle</span>
+  </div>
+  <div class="flex items-center gap-1">
+    <button id="ai-new-chat" title="New Chat"
+      class="w-6 h-6 flex items-center justify-center rounded border-none cursor-pointer transition-colors hover:bg-white/10"
+      style="background:transparent;color:#6b7394;">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M12 5v14M5 12h14"/>
+      </svg>
+    </button>
+    <button id="ai-chat-close" title="Close"
+      class="w-6 h-6 flex items-center justify-center rounded border-none cursor-pointer transition-colors hover:bg-white/10"
+      style="background:transparent;color:#6b7394;">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M18 6L6 18M6 6l12 12"/>
+      </svg>
+    </button>
+  </div>
+</div>

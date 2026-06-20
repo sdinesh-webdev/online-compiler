@@ -1,0 +1,86 @@
+---
+// ChatInputArea.astro
+---
+
+<!-- ── Typing indicator ── -->
+<div id="ai-typing-indicator" class="hidden px-3.5 py-2 shrink-0">
+  <div class="flex items-center gap-2.5">
+    <div class="flex items-center justify-center shrink-0"
+      style="width:26px;height:26px;border-radius:7px;background:rgba(157,124,242,0.12);border:1px solid rgba(157,124,242,0.25);">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#9d7cf2" stroke-width="2.5">
+        <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
+      </svg>
+    </div>
+    <div class="flex gap-1 items-center">
+      <div class="ai-dot" style="animation-delay:0ms;background:#9d7cf2;"></div>
+      <div class="ai-dot" style="animation-delay:150ms;background:#9d7cf2;"></div>
+      <div class="ai-dot" style="animation-delay:300ms;background:#9d7cf2;"></div>
+    </div>
+    <span class="text-[12px] opacity-60" style="color:#6b7394;" id="ai-typing-label">Thinking…</span>
+  </div>
+</div>
+
+<!-- ── Input area ── -->
+<div class="ai-input-area px-3.5 pb-3 pt-2 shrink-0 relative" style="border-top:1px solid #2c2f42;">
+
+  <div id="ai-model-dropdown" class="hidden absolute z-50 rounded-lg overflow-hidden shadow-2xl"
+    style="background:#1a1b26;border:1px solid #2c2f42;min-width:220px;bottom:calc(100% + 4px);left:12px;">
+    <div class="px-3 py-2 text-[9px] uppercase tracking-widest font-semibold opacity-40 border-b"
+      style="color:#c0caf5;border-color:#2c2f42;">via OpenRouter</div>
+    <div id="ai-model-list" class="py-1"></div>
+  </div>
+
+  <div class="flex items-center justify-between mb-2">
+    <button class="flex items-center gap-1.5 px-2 py-1 rounded-md cursor-pointer transition-colors hover:bg-white/5 border-none"
+      id="ai-model-selector-btn"
+      style="border:1px solid #2c2f42;background:transparent;color:#6b7394;">
+      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#9d7cf2" stroke-width="2">
+        <circle cx="12" cy="12" r="10"/>
+        <path d="M12 8v4l3 3"/>
+      </svg>
+      <span id="ai-model-label" class="text-[10px]" style="color:#6b7394;">Loading…</span>
+      <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+        style="color:#6b7394;">
+        <path d="M6 9l6 6 6-6"/>
+      </svg>
+    </button>
+    <label class="flex items-center gap-1.5 cursor-pointer select-none" title="Include editor code as context">
+      <input type="checkbox" id="ai-include-code" checked class="ai-toggle-cb" />
+      <span class="ai-toggle-track"></span>
+      <span class="text-[10px]" style="color:#6b7394;">Include code</span>
+    </label>
+  </div>
+
+  <div id="ai-input-wrap" class="flex gap-2 items-end rounded-lg px-3 py-2"
+    style="background:#1a1b26;border:1px solid #2c2f42;">
+    <textarea id="ai-chat-input" rows="1"
+      placeholder="Ask the agent, or describe a task…"
+      autocomplete="off" spellcheck="true"
+      class="flex-1 bg-transparent border-none outline-none resize-none text-[13px] leading-[1.6] overflow-hidden placeholder:opacity-60"
+      style="color:#c0caf5;max-height:120px;min-height:20px;font-family:inherit;"></textarea>
+    <div class="flex items-center gap-1 shrink-0">
+      <button id="ai-attach-btn" title="Attach file"
+        class="flex items-center justify-center w-7 h-7 rounded-md border-none cursor-pointer transition-all"
+        style="background:transparent;color:#6b7394;" onmouseenter="this.style.background='rgba(255,255,255,0.06)'" onmouseleave="this.style.background='transparent'">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/>
+        </svg>
+      </button>
+      <button id="ai-send-btn"
+        class="flex items-center justify-center w-7 h-7 rounded-md border-none cursor-pointer transition-all mb-px"
+        style="background:linear-gradient(135deg,#9d7cf2,#7dcfff);color:#14151c;"
+        title="Send (Enter)">
+        <svg id="ai-send-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/>
+        </svg>
+        <svg id="ai-stop-icon" class="hidden" width="11" height="11" viewBox="0 0 24 24" fill="currentColor">
+          <rect x="4" y="4" width="16" height="16" rx="2"/>
+        </svg>
+      </button>
+    </div>
+  </div>
+
+  <p class="text-[9px] mt-1.5 text-center opacity-30" style="color:#6b7394;">
+    Enter to send · Shift+Enter for newline
+  </p>
+</div>
